@@ -1,17 +1,12 @@
-## Hotel Management Application (HMA)
+# React + Vite
 
-A lightweight system to manage hotel operations, including room inventory, bookings, guest profiles, and billing. The application aims to streamline daily workflows for reception, housekeeping, and administration while maintaining accurate availability and financial records.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-### Key Capabilities
-- Room management: define room types, rates, availability, and status
-- Booking lifecycle: create, modify, cancel, and check-in/check-out
-- Guest management: profiles, preferences, and history
-- Billing: invoices, payments, and basic reports
+Currently, two official plugins are available:
 
-### Architecture
-High-level architecture and rationale are outlined here: [Tech-E Innovation Idea Briefing](https://wonderful-bellflower-fff.notion.site/Tech-E-Innovation-Idea-Breifing-25ee210d77a68038ac5cfbb406ff5c13)
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-### Status
-Initial requirements captured; implementation to follow based on the above scope.
+## Expanding the ESLint configuration
 
-
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
