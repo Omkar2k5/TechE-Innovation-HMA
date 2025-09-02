@@ -1,0 +1,83 @@
+[{
+  "user": {
+    "id": "68b331ef7f8d574cd494f452",
+    "name": "John Doe",
+    "email": "johndoe@example.com",
+    "role": "super_admin",
+    "password": "$2b$10$hashHere",
+    "status": "active",
+    "hotel": {
+      "id": "HOT001",
+      "name": "Sunrise Hotel",
+      "address": {
+        "street": "123 Ocean View",
+        "city": "Beachville",
+        "state": "CA",
+        "zip": "90001",
+        "country": "USA"
+      },
+      "contact": {
+        "phone": "+1234567890",
+        "email": "info@sunrise.com"
+      },
+      "taxConfig": {
+        "taxPercentage": 8,
+        "serviceCharge": 10
+      },
+      "settings": {
+        "businessHours": "09:00-22:00",
+        "timezone": "PST"
+      },
+      "roles": {
+        "owner": {
+          "id": "OWN001",
+          "name": "Anil Saxena",
+          "contact": {
+            "phone": "+911234567890",
+            "email": "anil.saxena@sunrise.com"
+          },
+          "features": {
+            "canManageHotel": true,
+            "canAssignRoles": true
+          }
+        },
+        "receptionist": {
+          "id": "REC001",
+          "name": "Anil Saxena",
+          "contact": {
+            "phone": "+911234567890",
+            "email": "anil.saxena@sunrise.com"
+          },
+          "features": {
+            "canCheckInGuests": true,
+            "canManageBookings": true
+          }
+        },
+        "manager": {
+          "id": "MAN001",
+          "name": "Priya Mehta",
+          "contact": {
+            "phone": "+911234567891",
+            "email": "priya.mehta@sunrise.com"
+          },
+          "features": {
+            "canOverseeOperations": true,
+            "canManageStaff": true
+          }
+        },
+        "cook": {
+          "id": "COOK001",
+          "name": "Raj Verma",
+          "contact": {
+            "phone": "+911234567892",
+            "email": "raj.verma@sunrise.com"
+          },
+          "features": {
+            "canPrepareMeals": true,
+            "canManageKitchenInventory": true
+          }
+        }
+      }
+    }
+  }
+}]
