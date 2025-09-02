@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "address",
+    "contact",
+    "name",
+    "owner",
+    "settings",
+    "taxConfig"
+  ],
+  "properties": {
+    "_id": {
+      "type": "string"
+    },
+    "address": {
+      "type": "object",
+      "required": [
+        "city",
+        "country",
+        "state",
+        "street",
+        "zip"
+      ],
+      "properties": {
+        "city": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "street": {
+          "type": "string"
+        },
+        "zip": {
+          "type": "string"
+        }
+      }
+    },
+    "contact": {
+      "type": "object",
+      "required": [
+        "email",
+        "phone"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        }
+      }
+    },
+    "name": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "object",
+      "required": [
+        "contact",
+        "name",
+        "ownerId"
+      ],
+      "properties": {
+        "contact": {
+          "type": "object",
+          "required": [
+            "email",
+            "phone"
+          ],
+          "properties": {
+            "email": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            }
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "ownerId": {
+          "type": "string"
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "required": [
+        "businessHours",
+        "timezone"
+      ],
+      "properties": {
+        "businessHours": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        }
+      }
+    },
+    "taxConfig": {
+      "type": "object",
+      "required": [
+        "serviceCharge",
+        "taxPercentage"
+      ],
+      "properties": {
+        "serviceCharge": {
+          "type": "integer"
+        },
+        "taxPercentage": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "$defs": {}
+}

@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "category",
+    "hotelId",
+    "name",
+    "purchaseOrders",
+    "reorderThreshold",
+    "stockQuantity",
+    "suppliers",
+    "type",
+    "unit",
+    "usageLogs"
+  ],
+  "properties": {
+    "_id": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "hotelId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "purchaseOrders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "date",
+          "orderId",
+          "price",
+          "quantity",
+          "staffId"
+        ],
+        "properties": {
+          "date": {
+            "$ref": "#/$defs/Date"
+          },
+          "orderId": {
+            "type": "string"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "$ref": "#/$defs/Double"
+              }
+            ]
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "staffId": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "reorderThreshold": {
+      "type": "integer"
+    },
+    "stockQuantity": {
+      "type": "integer"
+    },
+    "suppliers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "contact",
+          "lastOrderDate",
+          "lastOrderPrice",
+          "name",
+          "supplierId"
+        ],
+        "properties": {
+          "contact": {
+            "type": "string"
+          },
+          "lastOrderDate": {
+            "$ref": "#/$defs/Date"
+          },
+          "lastOrderPrice": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "$ref": "#/$defs/Double"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "supplierId": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "usageLogs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "date",
+          "quantityUsed"
+        ],
+        "properties": {
+          "date": {
+            "$ref": "#/$defs/Date"
+          },
+          "quantityUsed": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Double": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "$numberDouble": {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Date": {
+      "type": "object",
+      "properties": {
+        "$date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "$date"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

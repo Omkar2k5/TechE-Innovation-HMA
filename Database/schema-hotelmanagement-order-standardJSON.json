@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "createdAt",
+    "hotelId",
+    "items",
+    "payment",
+    "reservationId",
+    "specialRequests",
+    "staffId",
+    "status",
+    "tableId",
+    "timings",
+    "updatedAt"
+  ],
+  "properties": {
+    "_id": {
+      "type": "string"
+    },
+    "createdAt": {
+      "$ref": "#/$defs/Date"
+    },
+    "hotelId": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "menuId",
+          "name",
+          "price",
+          "qty"
+        ],
+        "properties": {
+          "menuId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "$ref": "#/$defs/Double"
+          },
+          "qty": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "payment": {
+      "type": "object",
+      "required": [
+        "amount",
+        "mode",
+        "paymentDate",
+        "status"
+      ],
+      "properties": {
+        "amount": {
+          "type": "integer"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "paymentDate": {
+          "$ref": "#/$defs/Date"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "reservationId": {
+      "type": "string"
+    },
+    "specialRequests": {
+      "type": "string"
+    },
+    "staffId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "tableId": {
+      "type": "string"
+    },
+    "timings": {
+      "type": "object",
+      "required": [
+        "completedAt",
+        "placedAt",
+        "preparedAt",
+        "servedAt"
+      ],
+      "properties": {
+        "completedAt": {
+          "$ref": "#/$defs/Date"
+        },
+        "placedAt": {
+          "$ref": "#/$defs/Date"
+        },
+        "preparedAt": {
+          "$ref": "#/$defs/Date"
+        },
+        "servedAt": {
+          "$ref": "#/$defs/Date"
+        }
+      }
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/Date"
+    }
+  },
+  "$defs": {
+    "Double": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "$numberDouble": {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Date": {
+      "type": "object",
+      "properties": {
+        "$date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "$date"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "address",
+    "attendanceSummary",
+    "certifications",
+    "contact",
+    "createdAt",
+    "dateOfJoining",
+    "experienceYears",
+    "hotelId",
+    "languages",
+    "lastAttendance",
+    "name",
+    "payroll",
+    "reportsToId",
+    "role",
+    "shift",
+    "skills",
+    "status",
+    "updatedAt"
+  ],
+  "properties": {
+    "_id": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "attendanceSummary": {
+      "type": "object",
+      "required": [
+        "lateCount",
+        "month",
+        "presentDays"
+      ],
+      "properties": {
+        "lateCount": {
+          "type": "integer"
+        },
+        "month": {
+          "type": "string"
+        },
+        "presentDays": {
+          "type": "integer"
+        }
+      }
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "contact": {
+      "type": "object",
+      "required": [
+        "email",
+        "phone"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        }
+      }
+    },
+    "createdAt": {
+      "$ref": "#/$defs/Date"
+    },
+    "dateOfJoining": {
+      "$ref": "#/$defs/Date"
+    },
+    "experienceYears": {
+      "type": "integer"
+    },
+    "hotelId": {
+      "type": "string"
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "lastAttendance": {
+      "type": "object",
+      "required": [
+        "date",
+        "shift",
+        "status"
+      ],
+      "properties": {
+        "date": {
+          "$ref": "#/$defs/Date"
+        },
+        "shift": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "name": {
+      "type": "string"
+    },
+    "payroll": {
+      "type": "object",
+      "required": [
+        "lastPaidDate",
+        "overtimeRate",
+        "salary"
+      ],
+      "properties": {
+        "lastPaidDate": {
+          "$ref": "#/$defs/Date"
+        },
+        "overtimeRate": {
+          "type": "integer"
+        },
+        "salary": {
+          "type": "integer"
+        }
+      }
+    },
+    "reportsToId": {
+      "type": "null"
+    },
+    "role": {
+      "type": "string"
+    },
+    "shift": {
+      "type": "string"
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/Date"
+    }
+  },
+  "$defs": {
+    "Date": {
+      "type": "object",
+      "properties": {
+        "$date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "$date"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "address",
+    "contact",
+    "createdAt",
+    "dateOfJoining",
+    "name",
+    "ownedHotels",
+    "status",
+    "updatedAt"
+  ],
+  "properties": {
+    "_id": {
+      "type": "string"
+    },
+    "address": {
+      "type": "object",
+      "required": [
+        "city",
+        "country",
+        "state",
+        "street",
+        "zip"
+      ],
+      "properties": {
+        "city": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "street": {
+          "type": "string"
+        },
+        "zip": {
+          "type": "string"
+        }
+      }
+    },
+    "contact": {
+      "type": "object",
+      "required": [
+        "email",
+        "phone"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        }
+      }
+    },
+    "createdAt": {
+      "$ref": "#/$defs/Date"
+    },
+    "dateOfJoining": {
+      "$ref": "#/$defs/Date"
+    },
+    "name": {
+      "type": "string"
+    },
+    "ownedHotels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "hotelId",
+          "hotelName"
+        ],
+        "properties": {
+          "hotelId": {
+            "type": "string"
+          },
+          "hotelName": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/Date"
+    }
+  },
+  "$defs": {
+    "Date": {
+      "type": "object",
+      "properties": {
+        "$date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "$date"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

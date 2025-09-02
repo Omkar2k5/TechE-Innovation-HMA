@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "createdAt",
+    "guestContact",
+    "guestName",
+    "hotelId",
+    "madeBy",
+    "numberOfGuests",
+    "reservationDateTime",
+    "specialRequests",
+    "status",
+    "tableId",
+    "updatedAt"
+  ],
+  "properties": {
+    "_id": {
+      "type": "string"
+    },
+    "createdAt": {
+      "$ref": "#/$defs/Date"
+    },
+    "guestContact": {
+      "type": "object",
+      "required": [
+        "email",
+        "phone"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        }
+      }
+    },
+    "guestName": {
+      "type": "string"
+    },
+    "hotelId": {
+      "type": "string"
+    },
+    "madeBy": {
+      "type": "object",
+      "required": [
+        "contact",
+        "staffId",
+        "staffName"
+      ],
+      "properties": {
+        "contact": {
+          "type": "object",
+          "required": [
+            "email",
+            "phone"
+          ],
+          "properties": {
+            "email": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            }
+          }
+        },
+        "staffId": {
+          "type": "string"
+        },
+        "staffName": {
+          "type": "string"
+        }
+      }
+    },
+    "numberOfGuests": {
+      "type": "integer"
+    },
+    "reservationDateTime": {
+      "$ref": "#/$defs/Date"
+    },
+    "specialRequests": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "tableId": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/Date"
+    }
+  },
+  "$defs": {
+    "Date": {
+      "type": "object",
+      "properties": {
+        "$date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "$date"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

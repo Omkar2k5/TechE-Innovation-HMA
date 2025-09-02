@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "_id",
+    "category",
+    "createdAt",
+    "description",
+    "dietaryTags",
+    "hotelId",
+    "ingredients",
+    "isAvailable",
+    "name",
+    "photoUrl",
+    "popularityScore",
+    "price",
+    "updatedAt"
+  ],
+  "properties": {
+    "_id": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "createdAt": {
+      "$ref": "#/$defs/Date"
+    },
+    "description": {
+      "type": "string"
+    },
+    "dietaryTags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "hotelId": {
+      "type": "string"
+    },
+    "ingredients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "quantity",
+          "supplierId"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "supplierId": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "isAvailable": {
+      "type": "boolean"
+    },
+    "name": {
+      "type": "string"
+    },
+    "nutritionalInfo": {
+      "type": "object",
+      "required": [
+        "calories",
+        "carbohydrates",
+        "fat",
+        "protein"
+      ],
+      "properties": {
+        "calories": {
+          "type": "integer"
+        },
+        "carbohydrates": {
+          "type": "string"
+        },
+        "fat": {
+          "type": "string"
+        },
+        "protein": {
+          "type": "string"
+        }
+      }
+    },
+    "photoUrl": {
+      "type": "string"
+    },
+    "popularityScore": {
+      "type": "integer"
+    },
+    "price": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "$ref": "#/$defs/Double"
+        }
+      ]
+    },
+    "updatedAt": {
+      "$ref": "#/$defs/Date"
+    }
+  },
+  "$defs": {
+    "Double": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "$numberDouble": {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Date": {
+      "type": "object",
+      "properties": {
+        "$date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "$date"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
