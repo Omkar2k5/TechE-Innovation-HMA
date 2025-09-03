@@ -3,14 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Building2,
-  CreditCard,
   Monitor,
-  Users as UsersIcon,
-  Receipt,
-  BarChart2,
-  Shield,
-  LifeBuoy,
-  Bell,
   SquarePlus,
 } from "lucide-react";
 
@@ -18,14 +11,7 @@ const links = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard },
   { name: "Hotels", path: "/hotels", icon: Building2 },
   { name: "Add Hotel", path: "/add-hotel", icon: SquarePlus },
-  { name: "Plans", path: "/plans", icon: CreditCard },
   { name: "POS Control", path: "/pos-control", icon: Monitor },
-  { name: "Users", path: "/users", icon: UsersIcon },
-  { name: "Billing", path: "/billing", icon: Receipt },
-  { name: "Analytics", path: "/analytics", icon: BarChart2 },
-  { name: "Security", path: "/security", icon: Shield },
-  { name: "Support", path: "/support", icon: LifeBuoy },
-  { name: "Notifications", path: "/notifications", icon: Bell },
 ];
 
 export default function Sidebar() {
