@@ -10,6 +10,7 @@ import Security from "./pages/Security";
 import Support from "./pages/Support";
 import Notifications from "./pages/Notifications";
 import Plans from "./pages/Plans";
+import AddHotel from "./pages/AddHotel";
 
 export default function AppRoutes() {
   return (
@@ -20,6 +21,7 @@ export default function AppRoutes() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/hotels" element={<Hotels />} />
+            <Route path="/add-hotel" element={<AddHotel />} />
             <Route path="/pos-control" element={<POSControl />} />
             <Route path="/users" element={<Users />} />
             <Route path="/billing" element={<Billing />} />
