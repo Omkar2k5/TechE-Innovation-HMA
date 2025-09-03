@@ -130,17 +130,17 @@ export default function AddHotel() {
 
   return (
     <div
-      className={`max-w-4xl mx-auto ${
+      className={`w-full min-h-screen ${
         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } transition-all duration-500`}
     >
-      <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6">
+      <div className="w-full">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 md:p-6">
           <h1 className="text-2xl font-bold text-white">Add Hotel</h1>
           <p className="text-blue-100 mt-1">Fill hotel details and owner information.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-8">
+        <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-8">
           {error ? (
             <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 p-3">{error}</div>
           ) : null}
