@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { Building2 } from "lucide-react";
 
 export default function AddHotel() {
   const [mounted, setMounted] = useState(false);
@@ -134,13 +135,24 @@ export default function AddHotel() {
         mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       } transition-all duration-500`}
     >
-      <div className="w-full">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 md:p-6">
-          <h1 className="text-2xl font-bold text-white">Add Hotel</h1>
-          <p className="text-blue-100 mt-1">Fill hotel details and owner information.</p>
+      <div className="w-full bg-gradient-to-br from-slate-50 via-white to-slate-50">
+        {/* Hero header */}
+        <div className="relative overflow-hidden p-4 md:p-8">
+          <div className="absolute inset-0 -z-10 opacity-40 bg-[radial-gradient(ellipse_at_top_left,rgba(59,130,246,0.35),transparent_50%),radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.35),transparent_50%)]" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-white/60 backdrop-blur border border-white/40 shadow-sm">
+              <Building2 className="text-blue-600" size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-800">Add Hotel</h1>
+              <p className="text-slate-500">Fill hotel details and owner information.</p>
+            </div>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-8">
+        {/* Animated form wrapper */}
+        <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-8 animate-[fadeIn_400ms_ease-out]">
+          <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
           {error ? (
             <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 p-3">{error}</div>
           ) : null}
@@ -154,11 +166,16 @@ export default function AddHotel() {
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-gray-800">Hotel</h2>
               </div>
-              {/* Auto-generated Hotel ID display */}
+              {/* Auto-generated Hotel ID display + copy */}
               <div className="text-sm">
-                <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  Hotel ID (auto): {hotelId}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(hotelId)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 backdrop-blur border border-blue-200 text-blue-700 hover:bg-white shadow-sm"
+                >
+                  <span className="font-mono">{hotelId}</span>
+                  <span className="text-xs">Copy</span>
+                </button>
               </div>
             </div>
 
@@ -172,60 +189,54 @@ export default function AddHotel() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Street" value={form.address.street} onChange={(v) => setField("address.street", v)} />
-              <Input label="City" value={form.address.city} onChange={(v) => setField("address.city", v)} />
-              <Input label="State" value={form.address.state} onChange={(v) => setField("address.state", v)} />
-              <Input label="Zip" value={form.address.zip} onChange={(v) => setField("address.zip", v)} />
-              <Input label="Country" value={form.address.country} onChange={(v) => setField("address.country", v)} />
-            </div>
+            <SectionPanel>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="Street" value={form.address.street} onChange={(v) => setField("address.street", v)} />
+                <Input label="City" value={form.address.city} onChange={(v) => setField("address.city", v)} />
+                <Input label="State" value={form.address.state} onChange={(v) => setField("address.state", v)} />
+                <Input label="Zip" value={form.address.zip} onChange={(v) => setField("address.zip", v)} />
+                <Input label="Country" value={form.address.country} onChange={(v) => setField("address.country", v)} />
+              </div>
+            </SectionPanel>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Hotel Phone" value={form.contact.phone} onChange={(v) => setField("contact.phone", v)} />
-              <Input label="Hotel Email" type="email" value={form.contact.email} onChange={(v) => setField("contact.email", v)} />
-            </div>
+            <SectionPanel>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="Hotel Phone" value={form.contact.phone} onChange={(v) => setField("contact.phone", v)} />
+                <Input label="Hotel Email" type="email" value={form.contact.email} onChange={(v) => setField("contact.email", v)} />
+              </div>
+            </SectionPanel>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <NumberInput label="Tax %" value={form.taxConfig.taxPercentage} onChange={(v) => setField("taxConfig.taxPercentage", v)} />
-              <NumberInput label="Service Charge %" value={form.taxConfig.serviceCharge} onChange={(v) => setField("taxConfig.serviceCharge", v)} />
-            </div>
+            <SectionPanel>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <NumberInput label="Tax %" value={form.taxConfig.taxPercentage} onChange={(v) => setField("taxConfig.taxPercentage", v)} />
+                <NumberInput label="Service Charge %" value={form.taxConfig.serviceCharge} onChange={(v) => setField("taxConfig.serviceCharge", v)} />
+              </div>
+            </SectionPanel>
           </section>
 
           {/* Owner */}
           <section className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800">Owner</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Owner Name" required value={form.owner.name} onChange={(v) => setField("owner.name", v)} />
-              <Input label="Owner Phone" required value={form.owner.phone} onChange={(v) => setField("owner.phone", v)} />
-              <Input label="Owner Email" type="email" required value={form.owner.email} onChange={(v) => setField("owner.email", v)} />
-              <Input label="Owner username" required value={form.owner.username} onChange={(v) => setField("owner.username", v)} />
-              <Input label="Owner Password" type="password" required value={form.owner.password} onChange={(v) => setField("owner.password", v)} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Toggle
-                label="Feature 1"
-                checked={form.owner.features.feature1}
-                onChange={(v) => setField("owner.features.feature1", v)}
-              />
-              <Toggle
-                label="Feature 2"
-                checked={form.owner.features.feature2}
-                onChange={(v) => setField("owner.features.feature2", v)}
-              />
-              <Toggle
-                label="Feature 3"
-                checked={form.owner.features.feature3}
-                onChange={(v) => setField("owner.features.feature3", v)}
-              />
-              <Toggle
-                label="Feature 4"
-                checked={form.owner.features.feature4}
-                onChange={(v) => setField("owner.features.feature4", v)}
-              />
-            </div>
+            <SectionPanel>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="Owner Name" required value={form.owner.name} onChange={(v) => setField("owner.name", v)} />
+                <Input label="Owner Phone" required value={form.owner.phone} onChange={(v) => setField("owner.phone", v)} />
+                <Input label="Owner Email" type="email" required value={form.owner.email} onChange={(v) => setField("owner.email", v)} />
+                <Input label="Owner username" required value={form.owner.username} onChange={(v) => setField("owner.username", v)} />
+                <Input label="Owner Password" type="password" required value={form.owner.password} onChange={(v) => setField("owner.password", v)} />
+              </div>
+            </SectionPanel>
+            <SectionPanel>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Toggle label="Feature 1" checked={form.owner.features.feature1} onChange={(v) => setField("owner.features.feature1", v)} />
+                <Toggle label="Feature 2" checked={form.owner.features.feature2} onChange={(v) => setField("owner.features.feature2", v)} />
+                <Toggle label="Feature 3" checked={form.owner.features.feature3} onChange={(v) => setField("owner.features.feature3", v)} />
+                <Toggle label="Feature 4" checked={form.owner.features.feature4} onChange={(v) => setField("owner.features.feature4", v)} />
+              </div>
+            </SectionPanel>
           </section>
 
-          <div className="pt-2 flex items-center gap-3">
+          <div className="sticky bottom-0 left-0 right-0 bg-white/80 backdrop-blur border-t border-gray-200 p-4 flex items-center gap-3">
             <button
               type="submit"
               disabled={loading}
@@ -279,6 +290,14 @@ function NumberInput({ label, value, onChange }) {
         className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 outline-none shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
       />
     </label>
+  );
+}
+
+function SectionPanel({ children }) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur px-4 md:px-6 py-4 shadow-sm hover:shadow-md transition-shadow">
+      {children}
+    </div>
   );
 }
 
