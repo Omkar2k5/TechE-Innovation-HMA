@@ -1,0 +1,43 @@
+[{
+  "_id": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "name": "Grand Hotel & Restaurant",
+  "subdomain": "grand-hotel",
+  "contactEmail": "info@grandhotel.com",
+  "phone": "+1-555-0123",
+  "address": {
+    "street": "123 Luxury Avenue",
+    "city": "New York",
+    "state": "NY",
+    "zipCode": "10001",
+    "country": "USA"
+  },
+  "settings": {
+    "currency": "USD",
+    "timezone": "America/New_York",
+    "language": "en",
+    "dateFormat": "MM/DD/YYYY"
+  },
+  "subscription": {
+    "plan": "premium",
+    "status": "active",
+    "expiresAt": {
+      "$date": "2024-06-15T00:00:00.000Z"
+    }
+  },
+  "features": [
+    "cctv_integration",
+    "ai_analytics",
+    "advanced_reporting"
+  ],
+  "createdBy": {
+    "$oid": "907f1f77bcf86cd799439031"
+  },
+  "createdAt": {
+    "$date": "2023-01-15T08:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T10:00:00.000Z"
+  }
+}]

@@ -1,0 +1,36 @@
+[{
+  "_id": {
+    "$oid": "947f1f77bcf86cd799439101"
+  },
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "reservationNumber": "RES-20230615-001",
+  "customer": {
+    "name": "John Smith",
+    "phone": "+1-555-0200",
+    "email": "john.smith@email.com",
+    "notes": "Celebrating anniversary"
+  },
+  "tableId": {
+    "$oid": "617f1f77bcf86cd799439061"
+  },
+  "tableNumber": "T01",
+  "guestCount": 4,
+  "reservationTime": {
+    "$date": "2023-06-15T20:00:00.000Z"
+  },
+  "duration": 90,
+  "status": "confirmed",
+  "specialRequests": "Window table preferred",
+  "source": "online",
+  "createdBy": {
+    "$oid": "507f1f77bcf86cd799439012"
+  },
+  "createdAt": {
+    "$date": "2023-06-14T10:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T20:00:00.000Z"
+  }
+}]

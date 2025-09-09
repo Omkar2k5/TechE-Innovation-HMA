@@ -1,0 +1,91 @@
+[{
+  "_id": {
+    "$oid": "837f1f77bcf86cd799439091"
+  },
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "orderNumber": "ORD-20230615-001",
+  "tableId": {
+    "$oid": "617f1f77bcf86cd799439062"
+  },
+  "tableNumber": "T02",
+  "waiterId": {
+    "$oid": "507f1f77bcf86cd799439014"
+  },
+  "waiterName": "Michael Rodriguez",
+  "customerCount": 2,
+  "status": "completed",
+  "type": "dine_in",
+  "items": [
+    {
+      "menuItemId": {
+        "$oid": "737f1f77bcf86cd799439081"
+      },
+      "name": "Grilled Salmon",
+      "quantity": 2,
+      "unitPrice": 24.99,
+      "totalPrice": 49.98,
+      "specialInstructions": "No lemon, well done",
+      "variations": [
+        {
+          "name": "Extra Sauce",
+          "price": 1.5
+        }
+      ],
+      "status": "served",
+      "cookId": {
+        "$oid": "507f1f77bcf86cd799439013"
+      },
+      "cookName": "David Wilson",
+      "startTime": {
+        "$date": "2023-06-15T19:05:00.000Z"
+      },
+      "readyTime": {
+        "$date": "2023-06-15T19:18:00.000Z"
+      },
+      "prepTime": 13
+    },
+    {
+      "menuItemId": {
+        "$oid": "737f1f77bcf86cd799439082"
+      },
+      "name": "Margherita Pizza",
+      "quantity": 1,
+      "unitPrice": 16.99,
+      "totalPrice": 16.99,
+      "specialInstructions": "Extra cheese",
+      "variations": [
+        {
+          "name": "Extra Cheese",
+          "price": 2
+        }
+      ],
+      "status": "served",
+      "cookId": {
+        "$oid": "507f1f77bcf86cd799439013"
+      },
+      "cookName": "David Wilson",
+      "startTime": {
+        "$date": "2023-06-15T19:05:00.000Z"
+      },
+      "readyTime": {
+        "$date": "2023-06-15T19:15:00.000Z"
+      },
+      "prepTime": 10
+    }
+  ],
+  "subtotal": 70.47,
+  "tax": 7.05,
+  "discount": 0,
+  "totalAmount": 77.52,
+  "paymentStatus": "paid",
+  "paymentMethod": "credit_card",
+  "orderNotes": "Anniversary celebration",
+  "createdAt": {
+    "$date": "2023-06-15T19:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T19:30:00.000Z"
+  }
+}]
