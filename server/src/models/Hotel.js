@@ -41,12 +41,25 @@ const RoleSchema = new mongoose.Schema(
     owner_Name: String,
     owner_Phone: String,
     owner_Email: String,
-    owner_Username: String,
     owner_Password: String,
+    // Only persisted for the Owner role
+    Passwordreset: { type: Boolean, default: undefined },
     features: { type: FeatureMapSchema, default: {} },
   },
   { _id: false, strict: false }
 );
+
+// Ensure Passwordreset is set to true only for the Owner role
+RoleSchema.pre("validate", function (next) {
+  if (this.role === "owner" && this.Passwordreset === undefined) {
+    this.Passwordreset = true;
+  }
+  // For non-owner roles, keep it undefined so it won't be saved
+  if (this.role !== "owner") {
+    this.Passwordreset = undefined;
+  }
+  next();
+});
 
 const HotelSchema = new mongoose.Schema(
   {

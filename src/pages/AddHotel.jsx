@@ -35,16 +35,24 @@ export default function AddHotel() {
       name: "",
       phone: "",
       email: "",
-      username: "",
       password: "",
-      features: {
-        feature1: false,
-        feature2: false,
-        feature3: false,
-        feature4: false,
-      },
     },
   });
+
+  // Role-based features (Owner, Receptionalist, Cook, Manager)
+  const [roleFeatures, setRoleFeatures] = useState({
+    owner: { feature1: false, feature2: false, feature3: false },
+    receptionalist: { feature1: false, feature2: false, feature3: false },
+    cook: { feature1: false, feature2: false, feature3: false },
+    manager: { feature1: false, feature2: false, feature3: false },
+  });
+
+  const setRoleFeature = (roleKey, featureKey, value) => {
+    setRoleFeatures((prev) => ({
+      ...prev,
+      [roleKey]: { ...prev[roleKey], [featureKey]: value },
+    }));
+  };
 
   const setField = (path, value) => {
     setForm((prev) => {
@@ -79,7 +87,7 @@ export default function AddHotel() {
     if (!c.email) return "Hotel contact email is required.";
 
     const o = form.owner;
-    if (!o.name || !o.phone || !o.email || !o.username || !o.password)
+    if (!o.name || !o.phone || !o.email || !o.password)
       return "All owner fields are required.";
 
     return "";
@@ -98,7 +106,7 @@ export default function AddHotel() {
       setError("");
       setMessage("");
 
-      // Build payload per requested structure
+      // Build payload per requested structure (now includes 4 roles with features)
       const payload = {
         _id: hotelId,
         name: form.name,
@@ -112,14 +120,30 @@ export default function AddHotel() {
             role: "owner",
             owner_Name: form.owner.name,
             owner_Phone: form.owner.phone,
-            "Owner Email": form.owner.email,
-            "Owner username": form.owner.username,
-            "Owner Password": form.owner.password,
-            features: { ...form.owner.features },
+            owner_Email: form.owner.email,
+            owner_Password: form.owner.password,
+            // Passwordreset will be set by DB default (true)
+            features: { ...roleFeatures.owner },
+          },
+          {
+            roleId: "REC001",
+            role: "receptionalist",
+            features: { ...roleFeatures.receptionalist },
+          },
+          {
+            roleId: "COOK001",
+            role: "cook",
+            features: { ...roleFeatures.cook },
+          },
+          {
+            roleId: "MGR001",
+            role: "manager",
+            features: { ...roleFeatures.manager },
           },
         ],
       };
 
+      // Send to API (server will handle DB write)
       await axios.post("/api/hotels", payload);
       setMessage("Hotel created successfully.");
     } catch (err) {
@@ -222,16 +246,48 @@ export default function AddHotel() {
                 <Input label="Owner Name" required value={form.owner.name} onChange={(v) => setField("owner.name", v)} />
                 <Input label="Owner Phone" required value={form.owner.phone} onChange={(v) => setField("owner.phone", v)} />
                 <Input label="Owner Email" type="email" required value={form.owner.email} onChange={(v) => setField("owner.email", v)} />
-                <Input label="Owner username" required value={form.owner.username} onChange={(v) => setField("owner.username", v)} />
                 <Input label="Owner Password" type="password" required value={form.owner.password} onChange={(v) => setField("owner.password", v)} />
               </div>
             </SectionPanel>
+          </section>
+
+          {/* Roles & Features */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-800">Roles & Features</h2>
+
             <SectionPanel>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Owner</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Toggle label="Feature 1" checked={form.owner.features.feature1} onChange={(v) => setField("owner.features.feature1", v)} />
-                <Toggle label="Feature 2" checked={form.owner.features.feature2} onChange={(v) => setField("owner.features.feature2", v)} />
-                <Toggle label="Feature 3" checked={form.owner.features.feature3} onChange={(v) => setField("owner.features.feature3", v)} />
-                <Toggle label="Feature 4" checked={form.owner.features.feature4} onChange={(v) => setField("owner.features.feature4", v)} />
+                <Toggle label="Feature 1" checked={roleFeatures.owner.feature1} onChange={(v) => setRoleFeature("owner", "feature1", v)} />
+                <Toggle label="Feature 2" checked={roleFeatures.owner.feature2} onChange={(v) => setRoleFeature("owner", "feature2", v)} />
+                <Toggle label="Feature 3" checked={roleFeatures.owner.feature3} onChange={(v) => setRoleFeature("owner", "feature3", v)} />
+              </div>
+            </SectionPanel>
+
+            <SectionPanel>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Receptionalist</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Toggle label="Feature 1" checked={roleFeatures.receptionalist.feature1} onChange={(v) => setRoleFeature("receptionalist", "feature1", v)} />
+                <Toggle label="Feature 2" checked={roleFeatures.receptionalist.feature2} onChange={(v) => setRoleFeature("receptionalist", "feature2", v)} />
+                <Toggle label="Feature 3" checked={roleFeatures.receptionalist.feature3} onChange={(v) => setRoleFeature("receptionalist", "feature3", v)} />
+              </div>
+            </SectionPanel>
+
+            <SectionPanel>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Cook</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Toggle label="Feature 1" checked={roleFeatures.cook.feature1} onChange={(v) => setRoleFeature("cook", "feature1", v)} />
+                <Toggle label="Feature 2" checked={roleFeatures.cook.feature2} onChange={(v) => setRoleFeature("cook", "feature2", v)} />
+                <Toggle label="Feature 3" checked={roleFeatures.cook.feature3} onChange={(v) => setRoleFeature("cook", "feature3", v)} />
+              </div>
+            </SectionPanel>
+
+            <SectionPanel>
+              <h3 className="text-sm font-medium text-gray-700 mb-3">Manager</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Toggle label="Feature 1" checked={roleFeatures.manager.feature1} onChange={(v) => setRoleFeature("manager", "feature1", v)} />
+                <Toggle label="Feature 2" checked={roleFeatures.manager.feature2} onChange={(v) => setRoleFeature("manager", "feature2", v)} />
+                <Toggle label="Feature 3" checked={roleFeatures.manager.feature3} onChange={(v) => setRoleFeature("manager", "feature3", v)} />
               </div>
             </SectionPanel>
           </section>
