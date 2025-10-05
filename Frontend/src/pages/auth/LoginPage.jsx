@@ -1,14 +1,16 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../auth/AuthContext'
+"use client"
+
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "../../auth/AuthContext"
 
 const LoginPage = () => {
   const { signIn } = useAuth()
   const navigate = useNavigate()
-  const [role, setRole] = useState('receptionist')
-  const [hotelId, setHotelId] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [role, setRole] = useState("receptionist")
+  const [hotelId, setHotelId] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
 
   const onSubmit = async (e) => {
@@ -33,7 +35,7 @@ const LoginPage = () => {
             >
               <option value="receptionist">Receptionist</option>
               <option value="cook">Cook</option>
-              <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
             </select>
           </div>
           <div>
@@ -66,14 +68,14 @@ const LoginPage = () => {
             disabled={loading || !hotelId || !email || !password}
             className="w-full px-4 py-2 rounded-md bg-slate-800 text-white disabled:opacity-50"
           >
-            {loading ? 'Signing In…' : 'Sign In'}
+            {loading ? "Signing In…" : "Sign In"}
           </button>
         </form>
 
         {/* Forgot Password Link */}
         <div className="mt-6 text-center">
           <button
-            onClick={() => navigate('/forgot-password')}
+            onClick={() => navigate("/forgot-password")}
             className="text-slate-600 hover:text-slate-800 text-sm font-medium transition-colors"
           >
             Forgot your password?

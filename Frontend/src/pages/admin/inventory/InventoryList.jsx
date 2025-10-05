@@ -32,7 +32,7 @@ export default function InventoryList(){
               <li key={it._id} className="flex justify-between items-center">
                 <div>
                   <div className="font-medium">{it.name}</div>
-                  <div className="text-sm text-gray-500">{it.stock} {it.unit} · ${it.costPerUnit}/unit</div>
+                      <div className="text-sm text-gray-500">{it.stock} {it.unit} · ₹{it.costPerUnit}/unit</div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={()=>adjust(it._id, 1)} className="px-2 py-1 bg-green-600 text-white rounded">+1</button>

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import reservationStore from '../../lib/reservationStore'
 
 // Small dropdown component used in header
 function ReservationDropdown({ openModal }) {
@@ -28,7 +29,7 @@ function ReservationDropdown({ openModal }) {
   )
 }
 
-export default function ReservationsPage() {
+export default function ReservationsPage({ allowCreate = true }) {
   const [reservations, setReservations] = useState([])
   const [tables, setTables] = useState(
     Array.from({ length: 18 }, (_, i) => ({
@@ -127,6 +128,8 @@ export default function ReservationsPage() {
         }
       }, 120)
 
+      // update shared store for admin view
+      reservationStore.setReservations(next)
       return next
     })
 
@@ -175,8 +178,8 @@ export default function ReservationsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-800">Reservations</h1>
         <div className="flex items-center gap-2">
-          {/* New Reservation dropdown */}
-          <ReservationDropdown openModal={openModal} />
+          {/* New Reservation dropdown - hidden when allowCreate is false (admin view) */}
+          {allowCreate && <ReservationDropdown openModal={openModal} />}
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 # Warp terminal files
 .warp/
+WARP.md
 
 # Dependencies
 node_modules/

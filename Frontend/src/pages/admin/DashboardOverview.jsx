@@ -1,45 +1,68 @@
-import React from 'react'
-import QuickStats from './inventory/QuickStats.jsx'
+import React, { useState } from 'react'
 
 export default function DashboardOverview(){
+  const [range, setRange] = useState('today')
+
+  // demo / placeholder metrics
+  const metrics = {
+    activeTables: '12/24',
+    pendingOrders: 0,
+    todaysRevenue: 133,
+    avgTurnaround: '5 mins'
+  }
+
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Admin Overview</h1>
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-medium mb-2">Quick Stats</h3>
-          <QuickStats items={[]} />
-        </div>
-        <div className="bg-white p-4 rounded shadow">
-          <div className="text-sm text-gray-500">Occupancy</div>
-          <div className="text-xl font-bold">68%</div>
-        </div>
-        <div className="bg-white p-4 rounded shadow">
-          <div className="text-sm text-gray-500">Average turnaround</div>
-          <div className="text-xl font-bold">45m</div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Business Overview</h1>
+        <div className="flex items-center gap-2">
+          <button onClick={()=>setRange('today')} className={`px-3 py-1 rounded ${range==='today' ? 'bg-blue-50 text-blue-700' : 'text-slate-600'}`}>Today</button>
+          <button onClick={()=>setRange('7d')} className={`px-3 py-1 rounded ${range==='7d' ? 'bg-blue-50 text-blue-700' : 'text-slate-600'}`}>7d</button>
+          <button onClick={()=>setRange('30d')} className={`px-3 py-1 rounded ${range==='30d' ? 'bg-blue-50 text-blue-700' : 'text-slate-600'}`}>30d</button>
         </div>
       </div>
 
-      <section className="mt-6">
-        <h3 className="text-lg font-medium mb-2">Tables</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded shadow p-4">
-            <div className="text-sm text-gray-500 mb-2">Table status & order timers</div>
-            <ul className="space-y-2">
-              <li className="flex justify-between"><span>Table 1</span><span className="text-sm text-green-600">Occupied · 12m</span></li>
-              <li className="flex justify-between"><span>Table 2</span><span className="text-sm text-yellow-600">Pending · 4m</span></li>
-              <li className="flex justify-between"><span>Table 3</span><span className="text-sm text-gray-500">Available</span></li>
-            </ul>
-          </div>
-          <div className="bg-white rounded shadow p-4">
-            <div className="text-sm text-gray-500 mb-2">Recent transactions</div>
-            <ul className="space-y-2">
-              <li className="flex justify-between"><span>Order #1024</span><span>$24.00</span></li>
-              <li className="flex justify-between"><span>Order #1023</span><span>$18.50</span></li>
-            </ul>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow p-4 flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="text-sm text-slate-500">Active Tables</div>
+              <div className="text-2xl font-semibold mt-2">{metrics.activeTables}</div>
+            </div>
+            <div className="text-xs px-2 py-1 bg-slate-100 rounded-full text-slate-600">Normal</div>
           </div>
         </div>
-      </section>
+
+        <div className="bg-white rounded-lg shadow p-4 flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="text-sm text-slate-500">Pending Orders</div>
+              <div className="text-2xl font-semibold mt-2">{metrics.pendingOrders}</div>
+            </div>
+            <div className="text-xs px-2 py-1 bg-slate-100 rounded-full text-slate-600">Normal</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4 flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="text-sm text-slate-500">Today's Revenue</div>
+              <div className="text-2xl font-semibold mt-2">₹{metrics.todaysRevenue}</div>
+            </div>
+            <div className="text-xs px-2 py-1 bg-green-50 rounded-full text-green-700">Good</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4 flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="text-sm text-slate-500">Avg Turnaround</div>
+              <div className="text-2xl font-semibold mt-2">{metrics.avgTurnaround}</div>
+            </div>
+            <div className="text-xs px-2 py-1 bg-green-50 rounded-full text-green-700">Efficient</div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

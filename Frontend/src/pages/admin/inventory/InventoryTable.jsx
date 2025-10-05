@@ -20,7 +20,7 @@ export default function InventoryTable({ items=[], onEdit, onDelete }){
               <td className="py-2">{it.name}</td>
               <td className="py-2">{it.stock}</td>
               <td className="py-2">{it.unit}</td>
-              <td className="py-2">${it.costPerUnit}</td>
+              <td className="py-2">₹{it.costPerUnit}</td>
               <td className="py-2">
                 <button onClick={()=>onEdit && onEdit(it._id, { stock: (it.stock||0) + 1 })} className="px-2 py-1 mr-2 bg-green-600 text-white rounded">+1</button>
                 <button onClick={()=>onEdit && onEdit(it._id, { stock: (it.stock||0) - 1 })} className="px-2 py-1 mr-2 bg-yellow-600 text-white rounded">-1</button>
