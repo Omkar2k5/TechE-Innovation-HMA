@@ -20,22 +20,34 @@ router.post('/login', async (req, res) => {
     }
 
     // Find hotel by ID
-    const hotel = await Hotel.findById(hotelId);
+    console.log('🔍 Searching for hotel with ID:', hotelId);
+    const hotel = await Hotel.findOne({ _id: hotelId }); 
+    console.log('🏨 Hotel search result:', hotel ? 'Found' : 'Not found');
+    
     if (!hotel) {
+      console.log('❌ Hotel not found in database with ID:', hotelId);
       return res.status(404).json({
         success: false,
         message: 'Hotel not found!',
       });
     }
+    
+    console.log('✅ Hotel found:', hotel.name, 'with', hotel.roles.length, 'roles');
 
     // Search for the role inside roles array
+    console.log('🔍 Searching for role:', role);
+    console.log('📁 Available roles:', hotel.roles.map(r => r.role));
     const foundRole = hotel.roles.find(r => r.role.toLowerCase() === role.toLowerCase());
+    
     if (!foundRole) {
+      console.log('❌ Role not found:', role);
       return res.status(404).json({
         success: false,
         message: 'Role not found in this hotel!',
       });
     }
+    
+    console.log('✅ Role found:', foundRole.role, 'with roleId:', foundRole.roleId);
 
     // Determine email/password field names based on role
     let roleEmailKey = "";
@@ -66,12 +78,24 @@ router.post('/login', async (req, res) => {
     }
 
     // Check if role has credentials defined
+    console.log('🔑 Checking credentials for role:', role);
+    console.log('📧 Looking for email field:', roleEmailKey);
+    console.log('🔒 Looking for password field:', rolePasswordKey);
+    console.log('📊 Role data keys:', Object.keys(foundRole));
+    
     if (!foundRole[roleEmailKey] || !foundRole[rolePasswordKey]) {
+      console.log('❌ Credentials not found. Email field value:', foundRole[roleEmailKey]);
+      console.log('❌ Password field value:', foundRole[rolePasswordKey] ? '[EXISTS]' : '[MISSING]');
       return res.status(401).json({
         success: false,
         message: `No credentials found for ${role} role. Please contact administrator.`,
       });
     }
+
+    console.log('✅ Credentials found. Validating...');
+    console.log('📧 Database email:', foundRole[roleEmailKey]);
+    console.log('📧 Provided email:', email);
+    console.log('🔒 Password match:', foundRole[rolePasswordKey] === password);
 
     // Validate credentials
     if (
