@@ -5,26 +5,43 @@ import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../auth/AuthContext"
 
 const LoginPage = () => {
-  const { signIn } = useAuth()
+  const { signIn, error, clearError } = useAuth()
   const navigate = useNavigate()
-  const [role, setRole] = useState("receptionist")
+  const [role, setRole] = useState("receptionalist")
   const [hotelId, setHotelId] = useState("")
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [loginError, setLoginError] = useState(null)
 
   const onSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    await signIn({ hotelId, email, password, role })
-    setLoading(false)
-    navigate(`/${role}`)
+    setLoginError(null)
+    clearError()
+
+    try {
+      await signIn({ hotelId, username, password, role })
+      navigate(`/${role}`)
+    } catch (err) {
+      setLoginError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
       <div className="w-full max-w-md bg-white rounded-2xl shadow p-6">
         <h1 className="text-xl font-semibold text-slate-800 mb-4">Sign in</h1>
+        
+        {/* Error Display */}
+        {(loginError || error) && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+            {loginError || error}
+          </div>
+        )}
+        
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <label className="block text-sm text-slate-600 mb-1">Role</label>
@@ -33,8 +50,9 @@ const LoginPage = () => {
               onChange={(e) => setRole(e.target.value)}
               className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
             >
-              <option value="receptionist">Receptionist</option>
+              <option value="receptionalist">Receptionist</option>
               <option value="cook">Cook</option>
+              <option value="manager">Manager</option>
               <option value="owner">Owner</option>
             </select>
           </div>
@@ -47,11 +65,11 @@ const LoginPage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm text-slate-600 mb-1">Email</label>
+            <label className="block text-sm text-slate-600 mb-1">Username</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
             />
           </div>
@@ -65,7 +83,7 @@ const LoginPage = () => {
             />
           </div>
           <button
-            disabled={loading || !hotelId || !email || !password}
+            disabled={loading || !hotelId || !username || !password}
             className="w-full px-4 py-2 rounded-md bg-slate-800 text-white disabled:opacity-50"
           >
             {loading ? "Signing In…" : "Sign In"}
