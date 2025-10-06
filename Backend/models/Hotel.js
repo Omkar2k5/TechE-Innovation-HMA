@@ -45,11 +45,14 @@ const roleSchema = new Schema({
   "Owner username": { type: String },
   "Owner Password": { type: String },
   // Manager-specific fields
-  "Manager username": { type: String },
+  "Manager Email": { type: String },
   "Manager Password": { type: String },
   // Receptionist-specific fields
-  "Receptionalist username": { type: String },
-  "Receptionalist Password": { type: String }
+  "Receptionalist Email": { type: String },
+  "Receptionalist Password": { type: String },
+  // Cook-specific fields
+  "Cook Email": { type: String },
+  "Cook Password": { type: String }
 }, { _id: false });
 
 // Main Hotel Schema

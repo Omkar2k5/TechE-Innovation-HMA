@@ -9,7 +9,7 @@ const LoginPage = () => {
   const navigate = useNavigate()
   const [role, setRole] = useState("receptionalist")
   const [hotelId, setHotelId] = useState("")
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [loginError, setLoginError] = useState(null)
@@ -21,7 +21,7 @@ const LoginPage = () => {
     clearError()
 
     try {
-      await signIn({ hotelId, username, password, role })
+      await signIn({ hotelId, email, password, role })
       navigate(`/${role}`)
     } catch (err) {
       setLoginError(err.message)
@@ -65,11 +65,11 @@ const LoginPage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm text-slate-600 mb-1">Username</label>
+            <label className="block text-sm text-slate-600 mb-1">Email</label>
             <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
             />
           </div>
@@ -83,7 +83,7 @@ const LoginPage = () => {
             />
           </div>
           <button
-            disabled={loading || !hotelId || !username || !password}
+            disabled={loading || !hotelId || !email || !password}
             className="w-full px-4 py-2 rounded-md bg-slate-800 text-white disabled:opacity-50"
           >
             {loading ? "Signing In…" : "Sign In"}

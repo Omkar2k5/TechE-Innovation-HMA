@@ -5,10 +5,18 @@ dotenv.config();
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    // Enhanced MongoDB connection options
+    const options = {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      bufferCommands: false
+    };
+
+    console.log('🔌 Attempting to connect to MongoDB...');
+    console.log('🌐 URI:', process.env.MONGO_URI.replace(/\/\/.*@/, '//***:***@'));
+    
+    const conn = await mongoose.connect(process.env.MONGO_URI, options);
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     console.log(`📊 Database: ${conn.connection.name}`);
@@ -16,7 +24,19 @@ const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error('❌ MongoDB Connection Error:', error.message);
-    process.exit(1);
+    console.error('💡 Troubleshooting tips:');
+    console.error('   1. Check if your IP is whitelisted in MongoDB Atlas');
+    console.error('   2. Verify your internet connection');
+    console.error('   3. Check if MongoDB Atlas cluster is running');
+    console.error('   4. Verify username/password in connection string');
+    
+    // Don't exit in development, just log the error
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    } else {
+      console.log('⚠️  Continuing in development mode without database...');
+      return null;
+    }
   }
 };
 

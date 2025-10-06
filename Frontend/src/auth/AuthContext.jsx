@@ -27,14 +27,14 @@ export const AuthProvider = ({ children }) => {
     setLoading(false)
   }, [])
 
-  const signIn = async ({ hotelId, username, password, role }) => {
+  const signIn = async ({ hotelId, email, password, role }) => {
     try {
       setError(null)
       
       const response = await api.post('/auth/login', {
         hotelId,
         role,
-        username,
+        email,
         password
       })
 

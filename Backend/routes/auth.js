@@ -9,13 +9,13 @@ const router = express.Router();
 // @access  Public
 router.post('/login', async (req, res) => {
   try {
-    const { hotelId, role, username, password } = req.body;
+    const { hotelId, role, email, password } = req.body;
 
     // Validation
-    if (!hotelId || !role || !username || !password) {
+    if (!hotelId || !role || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'hotelId, role, username, and password are required!',
+        message: 'hotelId, role, email, and password are required!',
       });
     }
 
@@ -37,33 +37,45 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Determine username/password field names based on role
-    let roleUsernameKey = "";
+    // Determine email/password field names based on role
+    let roleEmailKey = "";
     let rolePasswordKey = "";
 
     switch (role.toLowerCase()) {
       case "owner":
-        roleUsernameKey = "Owner username";
+        roleEmailKey = "Owner Email";
         rolePasswordKey = "Owner Password";
         break;
       case "manager":
-        roleUsernameKey = "Manager username";
+        roleEmailKey = "Manager Email";
         rolePasswordKey = "Manager Password";
         break;
       case "receptionalist":
-        roleUsernameKey = "Receptionalist username";
+        roleEmailKey = "Receptionalist Email";
         rolePasswordKey = "Receptionalist Password";
+        break;
+      case "cook":
+        roleEmailKey = "Cook Email";
+        rolePasswordKey = "Cook Password";
         break;
       default:
         return res.status(400).json({
           success: false,
-          message: "Invalid role. Must be owner, manager, or receptionalist.",
+          message: "Invalid role. Must be owner, manager, receptionalist, or cook.",
         });
+    }
+
+    // Check if role has credentials defined
+    if (!foundRole[roleEmailKey] || !foundRole[rolePasswordKey]) {
+      return res.status(401).json({
+        success: false,
+        message: `No credentials found for ${role} role. Please contact administrator.`,
+      });
     }
 
     // Validate credentials
     if (
-      foundRole[roleUsernameKey] === username &&
+      foundRole[roleEmailKey] === email &&
       foundRole[rolePasswordKey] === password
     ) {
       // Generate JWT token
@@ -71,7 +83,7 @@ router.post('/login', async (req, res) => {
         {
           hotelId: hotel._id,
           role: role.toLowerCase(),
-          username: username,
+          email: email,
           hotelName: hotel.name
         },
         process.env.JWT_SECRET,
@@ -88,7 +100,7 @@ router.post('/login', async (req, res) => {
         },
         user: {
           role: role.toLowerCase(),
-          username: username,
+          email: email,
           features: foundRole.features
         },
         roleDetails: {
@@ -100,7 +112,7 @@ router.post('/login', async (req, res) => {
     } else {
       return res.status(401).json({
         success: false,
-        message: "Invalid username or password!",
+        message: "Invalid email or password!",
       });
     }
 
