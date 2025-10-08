@@ -45,13 +45,19 @@ const roleSchema = new Schema({
   "Owner username": { type: String },
   "Owner Password": { type: String },
   // Manager-specific fields
+  "Manager Name": { type: String },
   "Manager Email": { type: String },
+  "Manager Phone": { type: String },
   "Manager Password": { type: String },
   // Receptionist-specific fields
+  "Receptionalist Name": { type: String },
   "Receptionalist Email": { type: String },
+  "Receptionalist Phone": { type: String },
   "Receptionalist Password": { type: String },
   // Cook-specific fields
+  "Cook Name": { type: String },
   "Cook Email": { type: String },
+  "Cook Phone": { type: String },
   "Cook Password": { type: String }
 }, { _id: false });
 

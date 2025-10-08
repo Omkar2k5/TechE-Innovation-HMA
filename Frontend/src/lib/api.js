@@ -28,5 +28,6 @@ export default {
   get: (p) => request(p, { method: 'GET' }),
   post: (p, body) => request(p, { method: 'POST', body: JSON.stringify(body) }),
   put: (p, body) => request(p, { method: 'PUT', body: JSON.stringify(body) }),
-  del: (p) => request(p, { method: 'DELETE' })
+  delete: (p, body) => request(p, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined }),
+  del: (p, body) => request(p, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined })
 }

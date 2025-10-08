@@ -124,13 +124,13 @@ const EmployeeManagement = () => {
     }
 
     try {
-      const response = await api.delete('/employees/remove', {
-        data: { role: role }
-      });
+      const response = await api.delete('/employees/remove', { role: role });
       
       if (response && response.success) {
         setMessage({ type: 'success', text: response.message });
         fetchEmployees();
+      } else {
+        setMessage({ type: 'error', text: response?.message || 'Failed to remove employee' });
       }
     } catch (error) {
       console.error('Error removing employee:', error);
