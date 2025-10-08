@@ -7,7 +7,7 @@ import { useAuth } from "../../auth/AuthContext"
 const LoginPage = () => {
   const { signIn, error, clearError } = useAuth()
   const navigate = useNavigate()
-  const [role, setRole] = useState("receptionalist")
+  const [role, setRole] = useState("receptionist")
   const [hotelId, setHotelId] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -50,7 +50,7 @@ const LoginPage = () => {
               onChange={(e) => setRole(e.target.value)}
               className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
             >
-              <option value="receptionalist">Receptionist</option>
+              <option value="receptionist">Receptionist</option>
               <option value="cook">Cook</option>
               <option value="manager">Manager</option>
               <option value="owner">Owner</option>

@@ -37,7 +37,14 @@ router.post('/login', async (req, res) => {
     // Search for the role inside roles array
     console.log('🔍 Searching for role:', role);
     console.log('📁 Available roles:', hotel.roles.map(r => r.role));
-    const foundRole = hotel.roles.find(r => r.role.toLowerCase() === role.toLowerCase());
+    
+    // Handle role name mapping (receptionist <-> receptionalist)
+    let roleToFind = role.toLowerCase();
+    if (roleToFind === 'receptionist') {
+      roleToFind = 'receptionalist'; // Convert to database format
+    }
+    
+    const foundRole = hotel.roles.find(r => r.role.toLowerCase() === roleToFind);
     
     if (!foundRole) {
       console.log('❌ Role not found:', role);
@@ -63,6 +70,7 @@ router.post('/login', async (req, res) => {
         rolePasswordKey = "Manager Password";
         break;
       case "receptionalist":
+      case "receptionist":
         roleEmailKey = "Receptionalist Email";
         rolePasswordKey = "Receptionalist Password";
         break;
@@ -73,7 +81,7 @@ router.post('/login', async (req, res) => {
       default:
         return res.status(400).json({
           success: false,
-          message: "Invalid role. Must be owner, manager, receptionalist, or cook.",
+          message: "Invalid role. Must be owner, manager, receptionalist/receptionist, or cook.",
         });
     }
 
