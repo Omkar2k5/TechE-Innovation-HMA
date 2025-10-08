@@ -13,26 +13,15 @@ export const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Get user from the token (exclude password)
-      req.user = await Staff.findById(decoded.userId)
-        .select('-password')
-        .populate('hotelId', 'name subdomain');
+      // For our hotel-based system, we store hotel and user info in token
+      req.user = {
+        hotelId: decoded.hotelId,
+        role: decoded.role,
+        email: decoded.email,
+        hotelName: decoded.hotelName
+      };
 
-      if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          message: 'User not found'
-        });
-      }
-
-      // Check if user is still active
-      if (req.user.status !== 'active') {
-        return res.status(401).json({
-          success: false,
-          message: 'User account is not active'
-        });
-      }
-
+      console.log('✅ Token verified for user:', req.user.email, 'at hotel:', req.user.hotelName);
       next();
     } catch (error) {
       console.error('❌ Auth Middleware Error:', error);

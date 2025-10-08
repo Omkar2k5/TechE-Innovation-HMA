@@ -5,6 +5,7 @@ import InventoryDashboard from "./inventory/InventoryDashboard.jsx"
 import DashboardOverview from "./DashboardOverview.jsx"
 import InventoryAnalytics from "./inventory/InventoryAnalytics.jsx"
 import TablesManagement from "./TablesManagement.jsx"
+import EmployeeManagement from "./EmployeeManagement.jsx"
 import { useAuth } from "../../auth/AuthContext.jsx"
 import { useNavigate } from "react-router-dom"
 
@@ -16,7 +17,7 @@ const Sidebar = ({ activeSection, setActiveSection, onLogout }) => {
     { id: "tables", label: "Table Management" },
     { id: "orders", label: "Orders & Billing" },
     { id: "reports", label: "Reports" },
-    { id: "add-employee", label: "Add Employee" },
+    { id: "employee-management", label: "Employee Management" },
   ]
 
   return (
@@ -65,53 +66,6 @@ const Sidebar = ({ activeSection, setActiveSection, onLogout }) => {
   )
 }
 
-function SendPasswordForm({ title, placeholderName, placeholderEmail }) {
-  const [name, setName] = React.useState("")
-  const [email, setEmail] = React.useState("")
-  const [sending, setSending] = React.useState(false)
-
-  const onSend = async (e) => {
-    e.preventDefault()
-    setSending(true)
-    console.log("[v0] Owner clicked Send Password:", { role: title, name, email })
-    setTimeout(() => {
-      alert(`Password sent to ${email}`)
-      setSending(false)
-      setName("")
-      setEmail("")
-    }, 500)
-  }
-
-  return (
-    <form onSubmit={onSend} className="max-w-md space-y-3 bg-white border rounded-lg p-4">
-      <div>
-        <label className="block text-sm text-gray-700 mb-1">Name</label>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full border rounded-md px-3 py-2"
-          placeholder={placeholderName}
-        />
-      </div>
-      <div>
-        <label className="block text-sm text-gray-700 mb-1">Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border rounded-md px-3 py-2"
-          placeholder={placeholderEmail}
-        />
-      </div>
-      <button
-        disabled={sending || !name || !email}
-        className="px-4 py-2 rounded-md bg-gray-900 text-white disabled:opacity-50"
-      >
-        {sending ? "Sending…" : "Send Password"}
-      </button>
-    </form>
-  )
-}
 
 export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState("dashboard")
@@ -136,33 +90,7 @@ export default function AdminDashboard() {
           </div>
         )}
         {activeSection === "reports" && <InventoryAnalytics />}
-        {activeSection === "add-employee" && (
-          <div className="space-y-4">
-            <h1 className="text-xl font-semibold">Add Employee</h1>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <h2 className="text-lg font-medium mb-2">Add Receptionist</h2>
-                <SendPasswordForm
-                  title="receptionist"
-                  placeholderName="Receptionist name"
-                  placeholderEmail="receptionist@example.com"
-                />
-              </div>
-              <div>
-                <h2 className="text-lg font-medium mb-2">Add Cook</h2>
-                <SendPasswordForm title="cook" placeholderName="Cook name" placeholderEmail="cook@example.com" />
-              </div>
-              <div>
-                <h2 className="text-lg font-medium mb-2">Add Manager</h2>
-                <SendPasswordForm
-                  title="manager"
-                  placeholderName="Manager name"
-                  placeholderEmail="manager@example.com"
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        {activeSection === "employee-management" && <EmployeeManagement />}
       </main>
     </div>
   )
