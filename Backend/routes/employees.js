@@ -317,11 +317,11 @@ router.delete('/remove', protect, authorize('owner'), async (req, res) => {
     const phoneField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Phone`;
     const passwordField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Password`;
 
-    // Remove employee fields
-    delete hotel.roles[roleIndex][emailField];
-    delete hotel.roles[roleIndex][nameField];
-    delete hotel.roles[roleIndex][phoneField];
-    delete hotel.roles[roleIndex][passwordField];
+    // Remove employee fields by setting to undefined (works better with Mongoose schemas)
+    hotel.roles[roleIndex][emailField] = undefined;
+    hotel.roles[roleIndex][nameField] = undefined;
+    hotel.roles[roleIndex][phoneField] = undefined;
+    hotel.roles[roleIndex][passwordField] = undefined;
 
     // Save the updated hotel
     hotel.updatedAt = new Date();
