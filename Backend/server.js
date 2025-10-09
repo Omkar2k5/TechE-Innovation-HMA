@@ -5,6 +5,8 @@ import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import employeeRoutes from './routes/employees.js';
 import tableRoutes from './routes/tables.js';
+import menuRoutes from './routes/menu.js';
+import orderRoutes from './routes/orders.js';
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +37,8 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/tables', tableRoutes);
+app.use('/api/menu', menuRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Health check route
 app.get('/', (req, res) => {

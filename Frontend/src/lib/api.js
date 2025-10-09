@@ -15,12 +15,22 @@ async function request(path, opts = {}){
     if (!res.ok) {
       const txt = await res.text()
       console.error('API error', res.status, txt)
-      return null
+      // Return error object instead of null so we can handle it better
+      return {
+        success: false,
+        message: `API Error ${res.status}: ${txt}`,
+        status: res.status
+      }
     }
     return await res.json()
   }catch(err){
     console.error('Request failed', err)
-    return null
+    // Return error object instead of null
+    return {
+      success: false,
+      message: `Network Error: ${err.message}`,
+      error: err
+    }
   }
 }
 

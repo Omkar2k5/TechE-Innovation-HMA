@@ -13,6 +13,7 @@ import TablesDashboard from "./pages/receptionist/TablesDashboard.jsx"
 import BillingPage from "./pages/receptionist/Billing.jsx"
 import ReportsPage from "./pages/receptionist/Reports.jsx"
 import ReceptionistEmployees from "./pages/receptionist/Employees.jsx"
+import MenuManagement from "./pages/receptionist/MenuManagement.jsx"
 import CookDashboard from "./pages/cook/Dashboard.jsx"
 import AdminDashboard from "./pages/admin/Dashboard.jsx"
 import { AuthProvider, RequireRole } from "./auth/AuthContext.jsx"
@@ -61,10 +62,10 @@ function App() {
             <Route path="/receptionist" element={<ReceptionistLayout />}>
               <Route index element={<ReceptionistDashboard />} />
               <Route path="reservations" element={<ReservationsPage />} />
-              <Route path="tables" element={<TablesDashboard />} />
               <Route path="billing" element={<BillingPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="employees" element={<ReceptionistEmployees />} />
+              <Route path="menu" element={<MenuManagement />} />
             </Route>
           </Route>
 

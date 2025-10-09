@@ -27,9 +27,6 @@ export default function ReceptionistLayout() {
         <NavLink to="/receptionist/reservations" className={linkClass}>
           Reservations
         </NavLink>
-        <NavLink to="/receptionist/tables" className={linkClass}>
-          Table Management
-        </NavLink>
         <NavLink to="/receptionist/billing" className={linkClass}>
           Orders & Billing
         </NavLink>
@@ -38,6 +35,9 @@ export default function ReceptionistLayout() {
         </NavLink>
         <NavLink to="/receptionist/employees" className={linkClass}>
           Add Employee
+        </NavLink>
+        <NavLink to="/receptionist/menu" className={linkClass}>
+          Menu Management
         </NavLink>
         <button
           onClick={logout}
