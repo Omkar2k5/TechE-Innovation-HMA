@@ -9,6 +9,7 @@ import ReceptionistLayout from "./layouts/ReceptionistLayout.jsx"
 import ReceptionistDashboard from "./pages/receptionist/Dashboard.jsx"
 import ReservationsPage from "./pages/receptionist/Reservations.jsx"
 import TablesPage from "./pages/receptionist/Tables.jsx"
+import TablesDashboard from "./pages/receptionist/TablesDashboard.jsx"
 import BillingPage from "./pages/receptionist/Billing.jsx"
 import ReportsPage from "./pages/receptionist/Reports.jsx"
 import ReceptionistEmployees from "./pages/receptionist/Employees.jsx"
@@ -60,7 +61,7 @@ function App() {
             <Route path="/receptionist" element={<ReceptionistLayout />}>
               <Route index element={<ReceptionistDashboard />} />
               <Route path="reservations" element={<ReservationsPage />} />
-              <Route path="tables" element={<TablesPage />} />
+              <Route path="tables" element={<TablesDashboard />} />
               <Route path="billing" element={<BillingPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="employees" element={<ReceptionistEmployees />} />
