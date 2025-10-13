@@ -253,7 +253,37 @@ router.put('/:orderId', protect, authorize('receptionist', 'manager', 'owner'), 
 
     // Update the order status
     const order = orderDocument.orders[orderIndex];
+    const oldStatus = order.orderStatus;
     
+    // Special handling for cancelled orders - delete them completely
+    if (orderStatus === 'CANCELLED') {
+      // Remove the order from the array
+      const deletedOrder = orderDocument.orders[orderIndex];
+      orderDocument.orders.splice(orderIndex, 1);
+      
+      // Update document timestamps
+      orderDocument.updatedAt = new Date();
+      
+      // Save the document
+      await orderDocument.save();
+      
+      console.log(`🗑️ Order ${orderId} cancelled and deleted from database`);
+      console.log(`📊 Remaining orders: ${orderDocument.orders.length}`);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Order cancelled and removed successfully',
+        data: {
+          orderId: orderId,
+          status: 'deleted',
+          tableId: deletedOrder.tableId,
+          remainingOrders: orderDocument.orders.length
+        }
+      });
+      return;
+    }
+    
+    // For all other status updates, just update the status
     if (orderStatus !== undefined) {
       order.orderStatus = orderStatus;
       
@@ -272,7 +302,7 @@ router.put('/:orderId', protect, authorize('receptionist', 'manager', 'owner'), 
     // Save the document
     await orderDocument.save();
 
-    console.log(`✅ Order ${orderId} status updated to ${orderStatus}`);
+    console.log(`✅ Order ${orderId} status updated from ${oldStatus} to ${orderStatus}`);
 
     res.status(200).json({
       success: true,

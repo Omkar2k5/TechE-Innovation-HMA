@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import api from '../../lib/api'
 import reservationStore from '../../lib/reservationStore'
 
 // Small dropdown component used in header
@@ -31,22 +32,17 @@ function ReservationDropdown({ openModal }) {
 
 export default function ReservationsPage({ allowCreate = true }) {
   const [reservations, setReservations] = useState([])
-  const [tables, setTables] = useState(
-    Array.from({ length: 18 }, (_, i) => ({
-      id: i + 1,
-      number: i + 1,
-      capacity: [2, 4, 6, 8][i % 4],
-      status: (i % 5 === 0 ? 'occupied' : 'available'),
-    }))
-  )
+  const [tables, setTables] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const upcomingCount = useMemo(
     () => reservations.filter((r) => r.status === 'pending' || r.status === 'reserved').length,
     [reservations]
   )
 
-  const walkinCount = useMemo(() => reservations.filter((r) => r.mode === 'walkin').length, [reservations])
-  const onlineCount = useMemo(() => reservations.filter((r) => r.mode === 'reservation' || r.mode === 'online').length, [reservations])
+  const walkinCount = useMemo(() => reservations.filter((r) => r.reservationType === 'walkin' || r.reservationType === 'walk-in').length, [reservations])
+  const onlineCount = useMemo(() => reservations.filter((r) => r.reservationType === 'reservation' || r.reservationType === 'online').length, [reservations])
 
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', persons: 2, time: '20:00' })
@@ -57,10 +53,21 @@ export default function ReservationsPage({ allowCreate = true }) {
   // reservation type filter: 'all' | 'walkin' | 'online'
   const [typeFilter, setTypeFilter] = useState('all')
 
-  const matchingTables = useMemo(
-    () => tables.filter((t) => t.capacity >= form.persons && t.status === 'available'),
-    [tables, form.persons]
-  )
+  const matchingTables = useMemo(() => {
+    console.log('🔄 Calculating matching tables...')
+    console.log('📊 Total tables:', tables.length)
+    console.log('👥 Required persons:', form.persons)
+    
+    const filtered = tables.filter((t) => {
+      const hasCapacity = t.capacity >= form.persons
+      const isAvailable = t.status === 'AVAILABLE' || t.status === 'VACANT'
+      console.log(`Table ${t.tableId}: capacity=${t.capacity}, status=${t.status}, hasCapacity=${hasCapacity}, isAvailable=${isAvailable}`)
+      return hasCapacity && isAvailable
+    })
+    
+    console.log('✅ Matching tables:', filtered.length)
+    return filtered
+  }, [tables, form.persons])
 
   const resetModal = (modeParam = 'reservation') => {
     setForm({ name: '', email: '', phone: '', persons: 2, time: '20:00' })
@@ -75,106 +82,157 @@ export default function ReservationsPage({ allowCreate = true }) {
 
   const closeModal = () => setOpen(false)
 
-  const confirmReservation = () => {
+  // Fetch reservations from API
+  const fetchReservations = async () => {
+    try {
+      console.log('🔍 Fetching reservations...');
+      const response = await api.get('/reservations')
+      console.log('📋 Reservations API response:', response);
+      
+      if (response.success) {
+        console.log('✅ Reservations loaded:', response.data.length, 'reservations');
+        console.log('📊 Reservation data:', response.data);
+        setReservations(response.data)
+      } else {
+        console.error('❌ Failed to load reservations:', response.message);
+        setError(response.message)
+      }
+    } catch (error) {
+      console.error('💥 Error fetching reservations:', error);
+      setError('Failed to fetch reservations')
+    }
+  }
+
+  // Fetch available tables from API
+  const fetchTables = async (guests = 1) => {
+    try {
+      console.log('🔍 Fetching tables for guests:', guests)
+      const response = await api.get(`/reservations/available-tables?guests=${guests}`)
+      console.log('📋 Tables API response:', response)
+      console.log('🔍 Response type:', typeof response)
+      console.log('🔍 Response keys:', Object.keys(response))
+      
+      if (response && response.success) {
+        console.log('✅ Tables loaded:', response.data?.length || 0, 'tables')
+        console.log('📊 Table data:', response.data)
+        setTables(response.data || [])
+      } else {
+        console.error('❌ Failed to load tables:', response?.message || 'Unknown error')
+        console.error('❌ Full response:', response)
+        setError(response?.message || 'Failed to load tables')
+      }
+    } catch (error) {
+      console.error('💥 Error fetching tables:', error)
+      setError('Failed to fetch tables')
+    }
+  }
+
+  const confirmReservation = async () => {
     if (!form.name || !form.phone || !selectedTableId) return
-    const table = tables.find((t) => t.id === selectedTableId)
+    const table = tables.find((t) => t.tableId === selectedTableId)
     if (!table) return
 
-    const today = new Date()
-    // For walk-ins, use current time; otherwise use selected time
-    let timeStr = form.time
-    if (mode === 'walkin') {
-      const hh = String(today.getHours()).padStart(2, '0')
-      const mm = String(today.getMinutes()).padStart(2, '0')
-      timeStr = `${hh}:${mm}`
-    }
-
-    const [hours, minutes] = timeStr.split(':').map(Number)
-    const start = new Date(today)
-    start.setHours(hours, minutes, 0, 0)
-
-    const bufferStart = new Date(start.getTime() - 2 * 60 * 60 * 1000) // 2 hours before
-    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000) // assume 2h duration
-
-    setReservations((prev) => {
-      const next = [
-        ...prev,
-        {
-          id: prev.length + 1,
+    try {
+      const reservationData = {
+        reservationType: mode,
+        customerDetails: {
           name: form.name,
           email: form.email,
           phone: form.phone,
-          time: timeStr,
-          table: `T${table.number}`,
-          guests: form.persons,
-          bufferStart,
-          start,
-          end,
-          status: 'pending', // not active until bufferStart
-          mode,
+          guests: form.persons
         },
-      ]
+        tableId: selectedTableId,
+        tableNumber: table.tableId,
+        reservationTime: form.time,
+        reservationDate: new Date().toISOString(),
+        specialRequests: '',
+        notes: ''
+      }
 
-      // show the list and apply filter for the created reservation type
-      setShowList(true)
-      setTypeFilter(mode === 'walkin' ? 'walkin' : 'online')
-
-      // scroll to the newly added reservation shortly after render
-      setTimeout(() => {
-        const list = document.getElementById('reservations-list')
-        if (list && list.children.length) {
-          const el = list.children[list.children.length - 1]
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }
-      }, 120)
-
-      // update shared store for admin view
-      reservationStore.setReservations(next)
-      return next
-    })
-
-    closeModal()
+      const response = await api.post('/reservations', reservationData)
+      if (response.success) {
+        // Refresh reservations and tables
+        await fetchReservations()
+        await fetchTables(form.persons)
+        
+        // Show the list and apply filter for the created reservation type
+        setShowList(true)
+        setTypeFilter(mode === 'walkin' ? 'walkin' : 'online')
+        
+        closeModal()
+      } else {
+        setError(response.message || 'Failed to create reservation')
+      }
+    } catch (error) {
+      setError('Failed to create reservation')
+      console.error('Error creating reservation:', error)
+    }
   }
 
-  // 🔥 Auto-update reservation statuses based on current time
+  // Update reservation status
+  const updateReservationStatus = async (reservationId, newStatus) => {
+    try {
+      console.log(`🔄 Updating reservation ${reservationId} to status: ${newStatus}`);
+      const response = await api.patch(`/reservations/${reservationId}/status`, { status: newStatus })
+      console.log('📋 Status update response:', response);
+      
+      if (response.success) {
+        if (newStatus === 'cancelled') {
+          console.log('🗑️ Reservation cancelled - it has been deleted from database');
+        }
+        // Refresh data to reflect changes
+        await fetchReservations()
+        await fetchTables(form.persons)
+        console.log('✅ Data refreshed after status update');
+      } else {
+        console.error('❌ Failed to update status:', response.message);
+        setError(response.message || 'Failed to update reservation status')
+      }
+    } catch (error) {
+      console.error('💥 Error updating reservation status:', error);
+      setError('Failed to update reservation status')
+    }
+  }
+
+  // Load data on component mount
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date()
+    const loadData = async () => {
+      setLoading(true)
+      await fetchReservations()
+      await fetchTables()
+      setLoading(false)
+    }
+    loadData()
+  }, [])
 
-      setReservations((prev) =>
-        prev.map((r) => {
-          if (r.status === 'cancelled' || r.status === 'completed' || r.status === 'seated') {
-            return r
-          }
-          if (now >= r.bufferStart && now < r.start) {
-            // within buffer window → reserved
-            return { ...r, status: 'reserved' }
-          }
-          if (now >= r.end) {
-            // past end time → completed
-            return { ...r, status: 'completed' }
-          }
-          return r
-        })
-      )
+  // Update tables when person count changes
+  useEffect(() => {
+    if (form.persons > 0) {
+      fetchTables(form.persons)
+    }
+  }, [form.persons])
 
-      // update table statuses based on active reservations
-      setTables((prev) =>
-        prev.map((t) => {
-          const activeRes = reservations.find((r) => r.table === `T${t.number}` && r.status === 'reserved')
-          if (activeRes) return { ...t, status: 'reserved' }
-          const occupiedRes = reservations.find((r) => r.table === `T${t.number}` && r.status === 'seated')
-          if (occupiedRes) return { ...t, status: 'occupied' }
-          return { ...t, status: 'available' }
-        })
-      )
-    }, 60000) // check every 1 minute
-
-    return () => clearInterval(interval)
-  }, [reservations])
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg text-gray-600">Loading reservations...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {error}
+          <button 
+            onClick={() => setError(null)}
+            className="ml-2 text-red-500 hover:text-red-700"
+          >
+            ×
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-800">Reservations</h1>
         <div className="flex items-center gap-2">
@@ -190,19 +248,31 @@ export default function ReservationsPage({ allowCreate = true }) {
       {/* Left-side filter buttons for reservation types */}
       <div className="flex items-center gap-2">
         <button
-          onClick={() => setTypeFilter('walkin')}
+          onClick={() => {
+            console.log('🔘 Walk-ins filter clicked');
+            setTypeFilter('walkin');
+            setShowList(true);
+          }}
           className={`px-3 py-1 rounded-md ${typeFilter === 'walkin' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-50'}`}
         >
           Walk-ins ({walkinCount})
         </button>
         <button
-          onClick={() => setTypeFilter('online')}
+          onClick={() => {
+            console.log('🔘 Online filter clicked');
+            setTypeFilter('online');
+            setShowList(true);
+          }}
           className={`px-3 py-1 rounded-md ${typeFilter === 'online' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-50'}`}
         >
           Online ({onlineCount})
         </button>
         <button
-          onClick={() => setTypeFilter('all')}
+          onClick={() => {
+            console.log('🔘 Show All filter clicked');
+            setTypeFilter('all');
+            setShowList(true);
+          }}
           className={`px-3 py-1 rounded-md ${typeFilter === 'all' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-50'}`}
         >
           Show All
@@ -211,52 +281,53 @@ export default function ReservationsPage({ allowCreate = true }) {
 
       {showList && (
         <div id="reservations-list" className="grid gap-3">
-          {reservations
-            .filter((r) => {
+          {(() => {
+            console.log('🔎 Filtering reservations...');
+            console.log('📊 Total reservations:', reservations.length);
+            console.log('🔘 Current filter:', typeFilter);
+            console.log('📊 Show list:', showList);
+            
+            const filtered = reservations.filter((r) => {
               if (typeFilter === 'all') return true
-              if (typeFilter === 'walkin') return r.mode === 'walkin'
-              if (typeFilter === 'online') return r.mode === 'reservation' || r.mode === 'online'
+              if (typeFilter === 'walkin') return r.reservationType === 'walkin' || r.reservationType === 'walk-in'
+              if (typeFilter === 'online') return r.reservationType === 'reservation' || r.reservationType === 'online'
               return true
-            })
+            });
+            
+            console.log('✅ Filtered reservations:', filtered.length);
+            console.log('📊 Filtered data:', filtered);
+            
+            return filtered;
+          })()
             .map((r) => (
           <div
-            key={r.id}
+            key={r.reservationId}
             className="rounded-lg border p-3 flex items-center justify-between bg-white"
           >
             <div>
               <div className="flex items-center gap-2">
-                <div className="font-medium">{r.name} <span className="text-xs text-slate-500">({r.phone})</span></div>
-                <div className={`text-xs px-2 py-0.5 rounded-full ${r.mode === 'walkin' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                  {r.mode === 'walkin' ? 'Walk-in' : 'Online'}
+                <div className="font-medium">{r.customerDetails.name} <span className="text-xs text-slate-500">({r.customerDetails.phone})</span></div>
+                <div className={`text-xs px-2 py-0.5 rounded-full ${r.reservationType === 'walkin' || r.reservationType === 'walk-in' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                  {r.reservationType === 'walkin' || r.reservationType === 'walk-in' ? 'Walk-in' : 'Online'}
                 </div>
               </div>
               <div className="text-sm text-slate-600">
-                {r.time} • {r.table} • {r.guests} guests
+                {r.reservationTime} • Table {r.tableId} • {r.customerDetails.guests} guests
               </div>
               <div className="text-xs text-slate-500">Status: {r.status}</div>
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() =>
-                  setReservations((prev) =>
-                    prev.map((pr) =>
-                      pr.id === r.id ? { ...pr, status: 'seated' } : pr
-                    )
-                  )
-                }
-                className="px-3 py-1 rounded-md bg-blue-600 text-white"
+                onClick={() => updateReservationStatus(r.reservationId, 'seated')}
+                disabled={r.status === 'seated' || r.status === 'completed' || r.status === 'cancelled'}
+                className="px-3 py-1 rounded-md bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Seat
               </button>
               <button
-                onClick={() =>
-                  setReservations((prev) =>
-                    prev.map((pr) =>
-                      pr.id === r.id ? { ...pr, status: 'cancelled' } : pr
-                    )
-                  )
-                }
-                className="px-3 py-1 rounded-md bg-red-600 text-white"
+                onClick={() => updateReservationStatus(r.reservationId, 'cancelled')}
+                disabled={r.status === 'cancelled' || r.status === 'completed'}
+                className="px-3 py-1 rounded-md bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -345,22 +416,22 @@ export default function ReservationsPage({ allowCreate = true }) {
                     </div>
                   )}
                   {matchingTables.map((t) => {
-                    const selected = t.id === selectedTableId
+                    const selected = t.tableId === selectedTableId
                     return (
                       <button
-                        key={t.id}
-                        onClick={() => setSelectedTableId(t.id)}
+                        key={t.tableId}
+                        onClick={() => setSelectedTableId(t.tableId)}
                         className={`rounded-lg border p-3 text-left transition-colors ${
                           selected
                             ? 'border-slate-800 ring-2 ring-slate-800'
                             : 'border-slate-200 hover:border-slate-300'
                         } ${
-                          t.status === 'available'
+                          t.status === 'VACANT' || t.status === 'AVAILABLE'
                             ? 'bg-green-50'
                             : 'bg-slate-50'
                         }`}
                       >
-                        <div className="font-semibold">Table {t.number}</div>
+                        <div className="font-semibold">Table {t.tableId}</div>
                         <div className="text-sm text-slate-600">
                           Capacity: {t.capacity}
                         </div>
