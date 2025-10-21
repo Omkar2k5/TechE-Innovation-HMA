@@ -82,7 +82,7 @@ const GuestModal = ({ table, onClose, onSave }) => {
 };
 
 // ---------------- TABLE CARD ----------------
-const TableCard = ({ table, onClick, onRightClick, isUpdating }) => {
+const TableCard = ({ table, onClick, onRightClick, onTakeOrder, isUpdating }) => {
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case 'vacant': return 'bg-green-100 border-green-300 hover:bg-green-200';
@@ -104,39 +104,54 @@ const TableCard = ({ table, onClick, onRightClick, isUpdating }) => {
   };
 
   return (
-    <button
-      onClick={onClick}
-      onContextMenu={(e) => {
-        e.preventDefault()
-        if (onRightClick) onRightClick(table)
-      }}
-      disabled={isUpdating}
-      className={`w-full h-28 rounded-lg p-3 border-2 text-left transition-colors cursor-pointer relative flex flex-col justify-between ${
-        isUpdating 
-          ? 'opacity-75 cursor-not-allowed bg-gray-100 border-gray-300' 
-          : getStatusColor(table.status)
-      }`}
-    >
-      {isUpdating && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-lg">
-          <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-600 border-t-transparent"></div>
+    <div className="relative group">
+      <button
+        onClick={onClick}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          if (onRightClick) onRightClick(table)
+        }}
+        disabled={isUpdating}
+        className={`w-full h-28 rounded-lg p-3 border-2 text-left transition-colors cursor-pointer relative flex flex-col justify-between ${
+          isUpdating 
+            ? 'opacity-75 cursor-not-allowed bg-gray-100 border-gray-300' 
+            : getStatusColor(table.status)
+        }`}
+      >
+        {isUpdating && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-lg">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-600 border-t-transparent"></div>
+          </div>
+        )}
+        
+        <div className="flex-1 flex flex-col justify-start">
+          <div className="font-bold text-lg leading-tight">{table.tableId}</div>
+          <div className="text-sm text-gray-600 leading-tight mt-1">{table.capacity} seats</div>
         </div>
+        
+        <div className="flex flex-col h-10 justify-end">
+          <div className={`text-xs font-medium uppercase leading-tight mb-1 ${getStatusTextColor(table.status)}`}>
+            {isUpdating ? 'Updating...' : table.status}
+          </div>
+          <div className="text-xs text-slate-700 leading-tight truncate h-4 flex items-center">
+            {table.guest ? `${table.guest.name} (${table.guest.groupSize})` : ''}
+          </div>
+        </div>
+      </button>
+      
+      {/* Take Order Button - Shows only for OCCUPIED tables */}
+      {table.status === 'OCCUPIED' && onTakeOrder && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onTakeOrder(table)
+          }}
+          className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white text-xs px-3 py-1 rounded-full hover:bg-slate-700 transition-all opacity-0 group-hover:opacity-100 whitespace-nowrap shadow-lg"
+        >
+          📋 Take Order
+        </button>
       )}
-      
-      <div className="flex-1 flex flex-col justify-start">
-        <div className="font-bold text-lg leading-tight">{table.tableId}</div>
-        <div className="text-sm text-gray-600 leading-tight mt-1">{table.capacity} seats</div>
-      </div>
-      
-      <div className="flex flex-col h-10 justify-end">
-        <div className={`text-xs font-medium uppercase leading-tight mb-1 ${getStatusTextColor(table.status)}`}>
-          {isUpdating ? 'Updating...' : table.status}
-        </div>
-        <div className="text-xs text-slate-700 leading-tight truncate h-4 flex items-center">
-          {table.guest ? `${table.guest.name} (${table.guest.groupSize})` : ''}
-        </div>
-      </div>
-    </button>
+    </div>
   );
 };
 
@@ -164,6 +179,12 @@ export default function ReceptionistDashboard() {
   const [selectedTable, setSelectedTable] = useState(null)
   const [activeFilter, setActiveFilter] = useState('all')
   const [updatingTable, setUpdatingTable] = useState(null)
+  const [showOrderModal, setShowOrderModal] = useState(false)
+  const [orderTable, setOrderTable] = useState(null)
+  const [menuItems, setMenuItems] = useState([])
+  const [loadingMenu, setLoadingMenu] = useState(false)
+  const [orderItems, setOrderItems] = useState([])
+  const [submittingOrder, setSubmittingOrder] = useState(false)
   const [addFormData, setAddFormData] = useState({
     tableId: '',
     capacity: 2,
@@ -346,6 +367,114 @@ export default function ReceptionistDashboard() {
     setSelectedTable(table)
   }
 
+  // ---------------- HANDLE TAKE ORDER ----------------
+  const handleTakeOrder = async (table) => {
+    setOrderTable(table)
+    setShowOrderModal(true)
+    setOrderItems([])
+    
+    // Fetch menu items
+    try {
+      setLoadingMenu(true)
+      setError(null)
+      
+      const response = await api.get('/menu')
+      
+      if (response && Array.isArray(response)) {
+        // Direct array response
+        setMenuItems(response.filter(item => item.active !== false))
+      } else if (response && response.success && response.data) {
+        // Wrapped response
+        setMenuItems(response.data.filter(item => item.active !== false))
+      } else {
+        setMenuItems([])
+        setError('No menu items available')
+      }
+    } catch (err) {
+      console.error('Error fetching menu:', err)
+      setError('Failed to load menu')
+      setMenuItems([])
+    } finally {
+      setLoadingMenu(false)
+    }
+  }
+
+  // ---------------- ADD/REMOVE ITEMS FROM ORDER ----------------
+  const addItemToOrder = (menuItem) => {
+    const existing = orderItems.find(item => item.menuId === menuItem._id)
+    if (existing) {
+      setOrderItems(orderItems.map(item =>
+        item.menuId === menuItem._id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      ))
+    } else {
+      setOrderItems([...orderItems, {
+        menuId: menuItem._id,
+        name: menuItem.name,
+        price: menuItem.price,
+        quantity: 1
+      }])
+    }
+  }
+
+  const removeItemFromOrder = (menuId) => {
+    const existing = orderItems.find(item => item.menuId === menuId)
+    if (existing && existing.quantity > 1) {
+      setOrderItems(orderItems.map(item =>
+        item.menuId === menuId
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      ))
+    } else {
+      setOrderItems(orderItems.filter(item => item.menuId !== menuId))
+    }
+  }
+
+  const clearOrder = () => {
+    setOrderItems([])
+  }
+
+  // ---------------- SUBMIT ORDER ----------------
+  const handleSubmitOrder = async () => {
+    if (orderItems.length === 0) {
+      setError('Please add at least one item to the order')
+      return
+    }
+
+    try {
+      setSubmittingOrder(true)
+      setError(null)
+
+      const response = await api.post('/orders', {
+        tableNumber: orderTable.tableId,
+        items: orderItems.map(item => ({
+          menuId: item.menuId,
+          quantity: item.quantity
+        })),
+        priority: 'normal'
+      })
+
+      if (response && (response.order || response._id)) {
+        // Success
+        setShowOrderModal(false)
+        setOrderTable(null)
+        setOrderItems([])
+        setMenuItems([])
+        
+        // Show success notification (you can enhance this)
+        alert('Order submitted successfully!')
+      } else {
+        setError(response?.message || response?.error || 'Failed to submit order')
+      }
+    } catch (err) {
+      console.error('Error submitting order:', err)
+      setError('Failed to submit order. Please try again.')
+    } finally {
+      setSubmittingOrder(false)
+    }
+  }
+
   const handleSaveTable = async (guest, status) => {
     if (!selectedTable) return
     
@@ -468,13 +597,14 @@ export default function ReceptionistDashboard() {
       </div>
 
       {/* TABLE GRID */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 gap-y-6">
         {filteredTables.map(table => (
           <TableCard 
             key={table.tableId} 
             table={table} 
             onClick={() => handleTableClick(table)}
             onRightClick={handleTableRightClick}
+            onTakeOrder={handleTakeOrder}
             isUpdating={updatingTable === table.tableId}
           />
         ))}
@@ -598,6 +728,201 @@ export default function ReceptionistDashboard() {
           onClose={() => setSelectedTable(null)}
           onSave={handleSaveTable}
         />
+      )}
+
+      {/* Order Taking Modal */}
+      {showOrderModal && orderTable && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex justify-between items-center p-6 border-b">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Take Order - Table {orderTable.tableId}</h2>
+                <p className="text-sm text-gray-600">
+                  {orderTable.guest ? `${orderTable.guest.name} (${orderTable.guest.groupSize} guests)` : 'Walk-in Guest'}
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowOrderModal(false)
+                  setOrderTable(null)
+                  setOrderItems([])
+                  setMenuItems([])
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-hidden flex">
+              {/* Menu Items - Left Side */}
+              <div className="flex-1 p-6 overflow-y-auto border-r">
+                <h3 className="font-semibold text-lg mb-4">Menu Items</h3>
+                
+                {loadingMenu ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-600 border-t-transparent"></div>
+                  </div>
+                ) : menuItems.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    No menu items available
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {menuItems.map(item => {
+                      const inOrder = orderItems.find(o => o.menuId === item._id)
+                      return (
+                        <div key={item._id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{item.name}</h4>
+                              {item.description && (
+                                <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                              )}
+                              <p className="text-sm font-semibold text-green-600 mt-1">₹{item.price}</p>
+                              {item.category && (
+                                <span className="inline-block text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded mt-1">
+                                  {item.category}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {inOrder ? (
+                                <>
+                                  <button
+                                    onClick={() => removeItemFromOrder(item._id)}
+                                    className="w-7 h-7 flex items-center justify-center bg-red-500 text-white rounded hover:bg-red-600"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="w-8 text-center font-medium">{inOrder.quantity}</span>
+                                  <button
+                                    onClick={() => addItemToOrder(item)}
+                                    className="w-7 h-7 flex items-center justify-center bg-green-500 text-white rounded hover:bg-green-600"
+                                  >
+                                    +
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => addItemToOrder(item)}
+                                  className="px-3 py-1 bg-slate-800 text-white text-sm rounded hover:bg-slate-700"
+                                >
+                                  Add
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Order Summary - Right Side */}
+              <div className="w-80 p-6 bg-gray-50 overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-lg">Order Summary</h3>
+                  {orderItems.length > 0 && (
+                    <button
+                      onClick={clearOrder}
+                      className="text-xs text-red-600 hover:text-red-700"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+
+                {orderItems.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500 text-sm">
+                    No items added yet
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {orderItems.map(item => (
+                      <div key={item.menuId} className="bg-white rounded-lg p-3 shadow-sm">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{item.name}</p>
+                            <p className="text-xs text-gray-600">₹{item.price} × {item.quantity}</p>
+                          </div>
+                          <p className="font-semibold text-sm">₹{item.price * item.quantity}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => removeItemFromOrder(item.menuId)}
+                            className="w-6 h-6 flex items-center justify-center bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                          <button
+                            onClick={() => addItemToOrder({ _id: item.menuId, name: item.name, price: item.price })}
+                            className="w-6 h-6 flex items-center justify-center bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                          >
+                            +
+                          </button>
+                          <button
+                            onClick={() => setOrderItems(orderItems.filter(i => i.menuId !== item.menuId))}
+                            className="ml-auto text-xs text-red-600 hover:text-red-700"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Total */}
+                    <div className="border-t pt-3 mt-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Total:</span>
+                        <span className="font-bold text-lg">₹{orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)}</span>
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">{orderItems.reduce((sum, item) => sum + item.quantity, 0)} item(s)</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t bg-gray-50">
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowOrderModal(false)
+                    setOrderTable(null)
+                    setOrderItems([])
+                    setMenuItems([])
+                  }}
+                  disabled={submittingOrder}
+                  className="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitOrder}
+                  disabled={submittingOrder || orderItems.length === 0}
+                  className="px-6 py-2 bg-slate-800 text-white rounded-md hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {submittingOrder ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Order'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Footer Info */}

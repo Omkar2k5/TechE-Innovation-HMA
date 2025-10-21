@@ -1,8 +1,15 @@
+import CookQueue from "./Queue.jsx"
+
 export default function CookDashboard() {
   return (
-    <div className="min-h-screen p-6">
-      <h1 className="text-xl font-semibold text-slate-800">Cook Dashboard</h1>
-      <p className="text-sm text-slate-600">Placeholder for kitchen orders.</p>
+    <div className="space-y-2">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Order Queue</h1>
+          <p className="text-slate-500 text-sm">Manage all incoming orders</p>
+        </div>
+      </div>
+      <CookQueue />
     </div>
   )
 }
