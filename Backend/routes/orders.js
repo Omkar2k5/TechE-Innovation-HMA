@@ -1,10 +1,73 @@
 import express from 'express';
 import Order from '../models/Order.js';
+import Bill from '../models/Bill.js';
 import Table from '../models/Table.js';
 import Menu from '../models/Menu.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// @desc    Get orders for cook dashboard (kitchen view)
+// @route   GET /api/orders/kitchen
+// @access  Private (Cook, Manager, Owner)
+router.get('/kitchen', protect, authorize('cook', 'manager', 'owner'), async (req, res) => {
+  try {
+    const hotelId = req.user.hotelId;
+
+    console.log('🔍 Fetching orders for kitchen:', hotelId);
+
+    // Find order document for hotel ID
+    let orderDocument = await Order.findById(hotelId);
+
+    if (!orderDocument) {
+      return res.status(200).json({
+        success: true,
+        message: 'No orders found',
+        data: {
+          orders: [],
+          stats: {
+            pending: 0,
+            preparing: 0,
+            ready: 0,
+            totalActive: 0
+          }
+        }
+      });
+    }
+
+    // Filter active orders (not served or cancelled)
+    const activeOrders = orderDocument.orders.filter(order => 
+      ['PENDING', 'PREPARING', 'READY'].includes(order.orderStatus) && order.isActive
+    );
+
+    // Calculate statistics
+    const stats = {
+      pending: activeOrders.filter(o => o.orderStatus === 'PENDING').length,
+      preparing: activeOrders.filter(o => o.orderStatus === 'PREPARING').length,
+      ready: activeOrders.filter(o => o.orderStatus === 'READY').length,
+      totalActive: activeOrders.length
+    };
+
+    console.log('✅ Kitchen orders found:', activeOrders.length, 'active orders');
+
+    res.status(200).json({
+      success: true,
+      message: 'Kitchen orders retrieved successfully',
+      data: {
+        orders: activeOrders,
+        stats: stats
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Get Kitchen Orders Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred while fetching kitchen orders',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
 
 // @desc    Get all orders for a hotel
 // @route   GET /api/orders
@@ -47,19 +110,20 @@ router.get('/', protect, authorize('receptionist', 'manager', 'owner'), async (r
 
     console.log('✅ Orders found:', orderDocument.orders.length, 'orders');
 
-    // Calculate summary statistics (using new schema)
-    const ongoingOrders = orderDocument.orders.filter(order => order.orderStatus === 'ONGOING');
+    // Calculate summary statistics (kitchen-focused, no billing data)
+    const pendingOrders = orderDocument.orders.filter(order => order.orderStatus === 'PENDING');
+    const preparingOrders = orderDocument.orders.filter(order => order.orderStatus === 'PREPARING');
+    const readyOrders = orderDocument.orders.filter(order => order.orderStatus === 'READY');
+    const servedOrders = orderDocument.orders.filter(order => order.orderStatus === 'SERVED');
     const completedOrders = orderDocument.orders.filter(order => order.orderStatus === 'COMPLETED');
-    const pendingPayments = orderDocument.orders.filter(order => order.billDetails?.paymentStatus === 'PENDING');
-    const paidOrders = orderDocument.orders.filter(order => order.billDetails?.paymentStatus === 'PAID');
     
     const orderStats = {
       totalOrders: orderDocument.orders.length,
-      ongoingOrders: ongoingOrders.length,
+      pendingOrders: pendingOrders.length,
+      preparingOrders: preparingOrders.length,
+      readyOrders: readyOrders.length,
+      servedOrders: servedOrders.length,
       completedOrders: completedOrders.length,
-      pendingPayments: pendingPayments.length,
-      totalRevenue: paidOrders.reduce((sum, order) => sum + (order.billDetails?.grandTotal || 0), 0),
-      pendingAmount: pendingPayments.reduce((sum, order) => sum + (order.billDetails?.grandTotal || 0), 0),
       todayOrders: orderDocument.orders.filter(order => {
         const today = new Date();
         const orderDate = new Date(order.orderTime?.placedAt || order.createdAt);
@@ -94,7 +158,7 @@ router.get('/', protect, authorize('receptionist', 'manager', 'owner'), async (r
 // @access  Private (Receptionist, Manager, Owner)
 router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (req, res) => {
   try {
-    const { tableId, customer, items, orderType, notes } = req.body;
+    const { tableId, customer, items, orderType, notes, priority } = req.body;
     const hotelId = req.user.hotelId;
 
     console.log('➕ Creating new order:', { hotelId, tableId, itemCount: items?.length });
@@ -114,21 +178,30 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
       });
     }
 
-    // Find the order document
+    // Get hotel information
+    const Hotel = (await import('../models/Hotel.js')).default;
+    const hotel = await Hotel.findById(hotelId);
+    
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Hotel not found'
+      });
+    }
+
+    // Get menu document to fetch preparation times
+    const menuDocument = await Menu.findById(hotelId);
+    
+    if (!menuDocument) {
+      return res.status(404).json({
+        success: false,
+        message: 'Hotel menu not found'
+      });
+    }
+
+    // Find or create order document
     let orderDocument = await Order.findById(hotelId);
-
     if (!orderDocument) {
-      // If no order document exists, create one first
-      const Hotel = (await import('../models/Hotel.js')).default;
-      const hotel = await Hotel.findById(hotelId);
-      
-      if (!hotel) {
-        return res.status(404).json({
-          success: false,
-          message: 'Hotel not found'
-        });
-      }
-
       orderDocument = new Order({
         _id: hotelId,
         hotelName: hotel.name,
@@ -137,11 +210,27 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
       });
     }
 
-    // Generate unique order ID
-    const orderId = `ORD_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    // Find or create bill document
+    let billDocument = await Bill.findById(hotelId);
+    if (!billDocument) {
+      billDocument = new Bill({
+        _id: hotelId,
+        hotelName: hotel.name,
+        bills: [],
+        isActive: true
+      });
+    }
 
-    // Validate and process order items (new schema)
-    const processedItems = [];
+    // Generate unique IDs
+    const orderId = `ORD_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const billId = `BILL_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
+    // Process items for order (kitchen-focused)
+    const orderItems = [];
+    let totalEstimatedTime = 0;
+    
+    // Process items for bill (payment-focused)
+    const billItems = [];
     let subtotal = 0;
     
     for (const item of items) {
@@ -152,61 +241,119 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
         });
       }
 
+      // Find menu item to get preparation time
+      const menuItem = menuDocument.menuItems.find(mi => mi._id.toString() === item.menuItemId);
+      const prepTime = menuItem?.avgPrepTimeMins || menuDocument.menuSettings?.defaultPreparationTime || 15;
+      
+      if (prepTime > totalEstimatedTime) {
+        totalEstimatedTime = prepTime;
+      }
+
       const totalPrice = item.quantity * item.unitPrice;
       subtotal += totalPrice;
       
-      processedItems.push({
-        itemId: item.menuItemId,
+      // Add to order items (kitchen)
+      orderItems.push({
+        menuItemId: item.menuItemId,
         itemName: item.name,
         quantity: item.quantity,
-        price: item.unitPrice,
+        preparationTimeMinutes: prepTime,
+        status: 'PENDING',
+        startedAt: null,
+        completedAt: null,
+        specialInstructions: item.specialInstructions || ''
+      });
+
+      // Add to bill items (payment)
+      billItems.push({
+        menuItemId: item.menuItemId,
+        itemName: item.name,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
         totalPrice: totalPrice
       });
     }
 
-    // Calculate tax (assuming 5% tax rate)
+    // Calculate tax and service charge (5% tax, 2% service charge)
     const tax = subtotal * 0.05;
-    const grandTotal = subtotal + tax;
+    const serviceCharge = subtotal * 0.02;
+    const grandTotal = subtotal + tax + serviceCharge;
 
-    // Create new order (new schema)
+    // Calculate estimated completion time
+    const estimatedCompletion = new Date();
+    estimatedCompletion.setMinutes(estimatedCompletion.getMinutes() + totalEstimatedTime);
+
+    // Create new order (for kitchen)
     const newOrder = {
       orderId: orderId,
+      billId: billId,
       tableId: tableId,
-      orderStatus: 'ONGOING',
-      orderedItems: processedItems,
-      billDetails: {
-        subtotal: subtotal,
-        tax: tax,
-        grandTotal: grandTotal,
-        paymentMethod: null,
-        paymentStatus: 'PENDING'
-      },
+      orderStatus: 'PENDING',
+      priority: priority || 'NORMAL',
+      orderedItems: orderItems,
       orderTime: {
         placedAt: new Date(),
-        completedAt: null
+        startedPreparationAt: null,
+        allItemsReadyAt: null,
+        servedAt: null
       },
       waiterAssigned: req.user.email || 'Unknown',
+      cookAssigned: null,
+      estimatedCompletionTime: estimatedCompletion,
+      notes: notes || '',
       isActive: true
     };
 
-    // Add the order
+    // Create new bill (for payment)
+    const newBill = {
+      billId: billId,
+      orderId: orderId,
+      tableId: tableId,
+      customerInfo: {
+        name: customer?.name || 'Walk-in Guest',
+        phone: customer?.phone || '',
+        groupSize: customer?.groupSize || 1
+      },
+      items: billItems,
+      paymentDetails: {
+        subtotal: subtotal,
+        tax: tax,
+        serviceCharge: serviceCharge,
+        discount: 0,
+        grandTotal: grandTotal,
+        paymentMethod: null,
+        paymentStatus: 'PENDING',
+        paidAmount: 0,
+        changeAmount: 0,
+        paidAt: null
+      },
+      waiterAssigned: req.user.email || 'Unknown',
+      billGeneratedAt: new Date(),
+      isActive: true,
+      notes: notes || ''
+    };
+
+    // Add to documents
     orderDocument.orders.push(newOrder);
+    billDocument.bills.push(newBill);
 
-    // Save the document (pre-save middleware will calculate totals)
-    await orderDocument.save();
+    // Save both documents
+    await Promise.all([
+      orderDocument.save(),
+      billDocument.save()
+    ]);
 
-    // Get the created order (with calculated totals)
-    const createdOrder = orderDocument.orders[orderDocument.orders.length - 1];
-
-    console.log(`✅ Order "${orderId}" created successfully for table ${tableId}`);
+    console.log(`✅ Order "${orderId}" and Bill "${billId}" created successfully for table ${tableId}`);
 
     res.status(201).json({
       success: true,
-      message: 'Order created successfully',
+      message: 'Order and bill created successfully',
       data: {
-        order: createdOrder,
         orderId: orderId,
-        totalOrders: orderDocument.orders.length
+        billId: billId,
+        order: newOrder,
+        bill: newBill,
+        estimatedCompletionTime: estimatedCompletion
       }
     });
 
@@ -215,6 +362,187 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
     res.status(500).json({
       success: false,
       message: 'Server error occurred while creating order',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// @desc    Start order preparation (for cook)
+// @route   POST /api/orders/:orderId/start
+// @access  Private (Cook, Manager, Owner)
+router.post('/:orderId/start', protect, authorize('cook', 'manager', 'owner'), async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const hotelId = req.user.hotelId;
+
+    console.log('👨‍🍳 Starting order preparation:', { hotelId, orderId });
+
+    // Find the order document
+    const orderDocument = await Order.findById(hotelId);
+
+    if (!orderDocument) {
+      return res.status(404).json({
+        success: false,
+        message: 'Hotel orders not found'
+      });
+    }
+
+    // Find the specific order
+    const orderIndex = orderDocument.orders.findIndex(order => order.orderId === orderId);
+
+    if (orderIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: `Order ${orderId} not found`
+      });
+    }
+
+    const order = orderDocument.orders[orderIndex];
+
+    // Update order status to PREPARING
+    const startTime = new Date();
+    order.orderStatus = 'PREPARING';
+    order.orderTime.startedPreparationAt = startTime;
+    order.cookAssigned = req.user.email || 'Unknown';
+
+    // Calculate total estimated preparation time
+    let maxPrepTime = 0;
+    order.orderedItems.forEach(item => {
+      if (item.preparationTimeMinutes > maxPrepTime) {
+        maxPrepTime = item.preparationTimeMinutes;
+      }
+    });
+
+    // Recalculate estimated completion time from NOW (when cooking actually starts)
+    const newEstimatedCompletion = new Date(startTime);
+    newEstimatedCompletion.setMinutes(newEstimatedCompletion.getMinutes() + maxPrepTime);
+    order.estimatedCompletionTime = newEstimatedCompletion;
+
+    // Update all items to PREPARING status
+    order.orderedItems.forEach(item => {
+      if (item.status === 'PENDING') {
+        item.status = 'PREPARING';
+        item.startedAt = startTime;
+      }
+    });
+
+    // Save the document
+    await orderDocument.save();
+
+    console.log(`✅ Order ${orderId} preparation started`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Order preparation started',
+      data: {
+        order: orderDocument.orders[orderIndex],
+        updatedAt: orderDocument.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Start Order Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred while starting order',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// @desc    Update order item status (for cook)
+// @route   PUT /api/orders/:orderId/items/:itemIndex
+// @access  Private (Cook, Manager, Owner)
+router.put('/:orderId/items/:itemIndex', protect, authorize('cook', 'manager', 'owner'), async (req, res) => {
+  try {
+    const { orderId, itemIndex } = req.params;
+    const { status } = req.body;
+    const hotelId = req.user.hotelId;
+
+    console.log('🔄 Updating order item:', { hotelId, orderId, itemIndex, status });
+
+    if (!['PENDING', 'PREPARING', 'READY', 'SERVED'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Must be PENDING, PREPARING, READY, or SERVED'
+      });
+    }
+
+    // Find the order document
+    const orderDocument = await Order.findById(hotelId);
+
+    if (!orderDocument) {
+      return res.status(404).json({
+        success: false,
+        message: 'Hotel orders not found'
+      });
+    }
+
+    // Find the specific order
+    const orderIndex = orderDocument.orders.findIndex(order => order.orderId === orderId);
+
+    if (orderIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: `Order ${orderId} not found`
+      });
+    }
+
+    const order = orderDocument.orders[orderIndex];
+    const idx = parseInt(itemIndex);
+
+    if (idx < 0 || idx >= order.orderedItems.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found'
+      });
+    }
+
+    const item = order.orderedItems[idx];
+
+    // Update item status
+    item.status = status;
+
+    if (status === 'PREPARING' && !item.startedAt) {
+      item.startedAt = new Date();
+    }
+
+    if (status === 'READY' && !item.completedAt) {
+      item.completedAt = new Date();
+    }
+
+    // Check if all items are ready
+    const allReady = order.orderedItems.every(i => i.status === 'READY' || i.status === 'SERVED');
+    
+    if (allReady) {
+      order.orderStatus = 'READY';
+      if (!order.orderTime.allItemsReadyAt) {
+        order.orderTime.allItemsReadyAt = new Date();
+      }
+    } else if (order.orderedItems.some(i => i.status === 'PREPARING')) {
+      order.orderStatus = 'PREPARING';
+    }
+
+    // Save the document
+    await orderDocument.save();
+
+    console.log(`✅ Order item ${idx} updated to ${status}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Order item updated successfully',
+      data: {
+        order: orderDocument.orders[orderIndex],
+        updatedItem: item,
+        allReady: allReady
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Update Order Item Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred while updating order item',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }

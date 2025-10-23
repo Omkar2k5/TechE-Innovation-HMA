@@ -412,23 +412,87 @@ export default function BillingPage() {
 
   const fetchOrders = async () => {
     try {
-      console.log('🔍 Fetching orders from API...');
-      const response = await api.get('/orders');
-      console.log('📥 Orders API response:', response);
+      console.log('🔍 Fetching orders and bills from API...');
       
-      if (response && response.success) {
-        console.log('✅ Orders loaded:', response.data?.orders?.length || 0, 'orders');
-        setOrderData(response.data);
-        setOrders(response.data?.orders || []);
+      // Fetch orders first
+      let ordersResponse;
+      try {
+        ordersResponse = await api.get('/orders');
+        console.log('📥 Orders API response:', ordersResponse);
+      } catch (ordersErr) {
+        console.error('❌ Orders API failed:', ordersErr);
+        setError('Failed to load orders: ' + (ordersErr.message || 'Unknown error'));
+        setOrders([]);
+        setOrderData(null);
+        return;
+      }
+      
+      // Fetch bills second
+      let billsResponse;
+      try {
+        billsResponse = await api.get('/bills');
+        console.log('📥 Bills API response:', billsResponse);
+      } catch (billsErr) {
+        console.error('❌ Bills API failed:', billsErr);
+        setError('Failed to load bills: ' + (billsErr.message || 'Unknown error'));
+        setOrders([]);
+        setOrderData(null);
+        return;
+      }
+      
+      if (ordersResponse && ordersResponse.success && billsResponse && billsResponse.success) {
+        const ordersData = ordersResponse.data?.orders || [];
+        const billsData = billsResponse.data?.bills || [];
+        
+        console.log('📄 Orders data:', ordersData.length, 'orders');
+        console.log('📄 Bills data:', billsData.length, 'bills');
+        
+        // If no orders, that's okay - not an error
+        if (ordersData.length === 0) {
+          console.log('📄 No orders found - this is normal for a new system');
+          setOrderData(ordersResponse.data);
+          setOrders([]);
+          setError(null);
+          return;
+        }
+        
+        // Create a map of bills by orderId for quick lookup
+        const billsMap = {};
+        billsData.forEach(bill => {
+          billsMap[bill.orderId] = bill;
+        });
+        
+        // Merge orders with their bills data
+        const mergedOrders = ordersData.map(order => {
+          const bill = billsMap[order.orderId];
+          return {
+            ...order,
+            billDetails: bill ? bill.paymentDetails : {
+              subtotal: 0,
+              tax: 0,
+              grandTotal: 0,
+              paymentStatus: 'PENDING',
+              paymentMethod: null
+            },
+            billId: bill ? bill.billId : null
+          };
+        });
+        
+        console.log('✅ Orders loaded and merged with bills:', mergedOrders.length, 'orders');
+        setOrderData(ordersResponse.data);
+        setOrders(mergedOrders);
+        setError(null); // Clear any previous errors
       } else {
-        console.warn('⚠️ Orders API returned unsuccessful response:', response);
-        setError(response?.message || 'Failed to load orders');
+        console.warn('⚠️ API returned unsuccessful response');
+        console.warn('Orders response success:', ordersResponse?.success);
+        console.warn('Bills response success:', billsResponse?.success);
+        setError(`Failed to load data: ${!ordersResponse?.success ? 'Orders API failed. ' : ''}${!billsResponse?.success ? 'Bills API failed.' : ''}`);
         setOrders([]);
         setOrderData(null);
       }
     } catch (err) {
-      console.error('❌ Error fetching orders:', err);
-      setError('Failed to load orders - ' + (err.message || 'Unknown error'));
+      console.error('❌ Error fetching orders and bills:', err);
+      setError('Failed to load orders and billing data: ' + (err.message || 'Unknown error'));
       setOrders([]);
       setOrderData(null);
     }
@@ -438,7 +502,21 @@ export default function BillingPage() {
   const handleUpdateBilling = async (orderId, billingData) => {
     try {
       console.log('💳 Updating billing for order:', orderId, billingData);
-      const response = await api.put(`/orders/${orderId}/billing`, billingData);
+      
+      // Find the order to get billId
+      const order = orders.find(o => o.orderId === orderId);
+      if (!order || !order.billId) {
+        setError('Bill ID not found for this order');
+        return;
+      }
+      
+      // Use bills API endpoint with billId
+      const response = await api.put(`/bills/${order.billId}/payment`, {
+        paymentMethod: billingData.paymentMethod,
+        paymentStatus: billingData.paymentStatus,
+        paidAmount: billingData.paidAmount,
+        discount: billingData.discount
+      });
       
       if (response && response.success) {
         console.log('✅ Billing updated successfully');
@@ -450,7 +528,7 @@ export default function BillingPage() {
       }
     } catch (err) {
       console.error('❌ Error updating billing:', err);
-      setError('Failed to update billing status');
+      setError('Failed to update billing status: ' + (err.message || 'Unknown error'));
     }
   }
 

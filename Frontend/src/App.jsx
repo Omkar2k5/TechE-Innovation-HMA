@@ -6,6 +6,7 @@ import LoginPage from "./pages/auth/LoginPage.jsx"
 import ForgotPassword from "./pages/auth/ForgotPassword.jsx"
 import ResetPassword from "./pages/auth/ResetPassword.jsx"
 import ReceptionistLayout from "./layouts/ReceptionistLayout.jsx"
+import CookLayout from "./layouts/CookLayout.jsx"
 import ReceptionistDashboard from "./pages/receptionist/Dashboard.jsx"
 import ReservationsPage from "./pages/receptionist/Reservations.jsx"
 import TablesPage from "./pages/receptionist/Tables.jsx"
@@ -70,7 +71,9 @@ function App() {
           </Route>
 
           <Route element={<RequireRole role="cook" />}>
-            <Route path="/cook" element={<CookDashboard />} />
+            <Route path="/cook" element={<CookLayout />}>
+              <Route index element={<CookDashboard />} />
+            </Route>
           </Route>
 
           <Route element={<RequireRole role="owner" />}>

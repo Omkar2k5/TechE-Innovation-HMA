@@ -116,9 +116,9 @@ const billingSchema = new Schema({
   }
 }, { _id: false });
 
-// Sub-schema for ordered items (matching new structure)
+// Sub-schema for ordered items (kitchen-focused with preparation tracking)
 const orderedItemSchema = new Schema({
-  itemId: {
+  menuItemId: {
     type: String,
     required: true
   },
@@ -132,55 +132,47 @@ const orderedItemSchema = new Schema({
     required: true,
     min: 1
   },
-  price: {
+  preparationTimeMinutes: {
     type: Number,
     required: true,
     min: 0
   },
-  totalPrice: {
-    type: Number,
-    required: true,
-    min: 0
-  }
-}, { _id: false });
-
-// Sub-schema for bill details
-const billDetailsSchema = new Schema({
-  subtotal: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  tax: {
-    type: Number,
-    min: 0,
-    default: 0
-  },
-  grandTotal: {
-    type: Number,
-    required: true,
-    min: 0
-  },
-  paymentMethod: {
+  status: {
     type: String,
-    enum: ['CASH', 'CARD', 'UPI', 'OTHER'],
+    enum: ['PENDING', 'PREPARING', 'READY', 'SERVED'],
+    default: 'PENDING'
+  },
+  startedAt: {
+    type: Date,
     default: null
   },
-  paymentStatus: {
+  completedAt: {
+    type: Date,
+    default: null
+  },
+  specialInstructions: {
     type: String,
-    enum: ['PAID', 'PENDING'],
-    default: 'PENDING'
+    trim: true
   }
 }, { _id: false });
 
-// Sub-schema for order time
+
+// Sub-schema for order timing (kitchen perspective)
 const orderTimeSchema = new Schema({
   placedAt: {
     type: Date,
     required: true,
     default: Date.now
   },
-  completedAt: {
+  startedPreparationAt: {
+    type: Date,
+    default: null
+  },
+  allItemsReadyAt: {
+    type: Date,
+    default: null
+  },
+  servedAt: {
     type: Date,
     default: null
   }
@@ -202,6 +194,10 @@ const orderSchema = new Schema({
       type: String,
       required: true
     },
+    billId: {
+      type: String,
+      required: true
+    },
     tableId: {
       type: String,
       required: true,
@@ -209,15 +205,31 @@ const orderSchema = new Schema({
     },
     orderStatus: {
       type: String,
-      enum: ['ONGOING', 'COMPLETED', 'CANCELLED'],
-      default: 'ONGOING'
+      enum: ['PENDING', 'PREPARING', 'READY', 'SERVED', 'CANCELLED'],
+      default: 'PENDING'
+    },
+    priority: {
+      type: String,
+      enum: ['LOW', 'NORMAL', 'HIGH', 'URGENT'],
+      default: 'NORMAL'
     },
     orderedItems: [orderedItemSchema],
-    billDetails: billDetailsSchema,
     orderTime: orderTimeSchema,
     waiterAssigned: {
       type: String,
       required: true
+    },
+    cookAssigned: {
+      type: String,
+      default: null
+    },
+    estimatedCompletionTime: {
+      type: Date,
+      default: null
+    },
+    notes: {
+      type: String,
+      trim: true
     },
     isActive: {
       type: Boolean,
@@ -250,10 +262,12 @@ orderSchema.pre('save', function(next) {
 // Index for better performance
 orderSchema.index({ '_id': 1 });
 orderSchema.index({ 'orders.orderId': 1 });
+orderSchema.index({ 'orders.billId': 1 });
 orderSchema.index({ 'orders.tableId': 1 });
 orderSchema.index({ 'orders.orderStatus': 1 });
+orderSchema.index({ 'orders.priority': 1 });
 orderSchema.index({ 'orders.orderTime.placedAt': -1 });
-orderSchema.index({ 'orders.billDetails.paymentStatus': 1 });
+orderSchema.index({ 'orders.orderedItems.status': 1 });
 
 const Order = mongoose.model('Order', orderSchema, 'orders');
 

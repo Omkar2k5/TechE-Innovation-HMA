@@ -57,29 +57,29 @@ function Timer({ since }) {
 }
 
 function ItemRow({ item, onUpdate, onShortage }) {
-  const isCooking = item.status === "in_progress"
-  const isReady = item.status === "ready"
+  const isCooking = item.status === "PREPARING"
+  const isReady = item.status === "READY"
 
   return (
-    <div key={item.id} className="bg-white rounded-xl border-2 border-slate-200 p-6">
+    <div className="bg-white rounded-xl border-2 border-slate-200 p-6">
       <div className="flex items-start justify-between">
         <div>
-          <div className="text-slate-900 font-semibold text-lg">{item.name}</div>
+          <div className="text-slate-900 font-semibold text-lg">{item.itemName || item.name}</div>
           <div className="text-slate-500 text-sm mt-2">Qty: {item.quantity || 1}</div>
         </div>
         <div>
           <span
             className={`inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold border-2 ${
-              item.status === "pending"
+              item.status === "PENDING"
                 ? "bg-amber-50 text-amber-800 border-amber-200"
-                : item.status === "in_progress"
+                : item.status === "PREPARING"
                   ? "bg-blue-50 text-blue-800 border-blue-200"
                   : "bg-green-50 text-green-800 border-green-200"
             }`}
           >
-            {item.status === "pending" && "PENDING"}
-            {item.status === "in_progress" && "COOKING"}
-            {item.status === "ready" && "READY"}
+            {item.status === "PENDING" && "PENDING"}
+            {item.status === "PREPARING" && "COOKING"}
+            {item.status === "READY" && "READY"}
           </span>
         </div>
       </div>
@@ -91,7 +91,7 @@ function ItemRow({ item, onUpdate, onShortage }) {
               ? "bg-blue-600 text-white border-blue-600"
               : "bg-white text-blue-700 border-blue-300 hover:bg-blue-50"
           }`}
-          onClick={() => onUpdate({ status: "in_progress" })}
+          onClick={() => onUpdate({ status: "PREPARING" })}
         >
           Cooking
         </button>
@@ -101,7 +101,7 @@ function ItemRow({ item, onUpdate, onShortage }) {
               ? "bg-green-600 text-white border-green-600"
               : "bg-white text-green-700 border-green-300 hover:bg-green-50"
           }`}
-          onClick={() => onUpdate({ status: "ready" })}
+          onClick={() => onUpdate({ status: "READY" })}
         >
           ✓ Ready
         </button>
@@ -190,12 +190,17 @@ export default function CookQueue() {
     let mounted = true
     const fetchOrders = async () => {
       try {
-        const res = await api.get("/orders")
+        const res = await api.get("/orders/kitchen")
         if (!mounted) return
-        console.log("Fetched orders:", res.data)
-        setOrders(res.data || [])
+        console.log("Fetched orders:", res)
+        if (res && res.success && res.data && res.data.orders) {
+          setOrders(res.data.orders)
+        } else {
+          setOrders([])
+        }
       } catch (err) {
         console.error("Failed to fetch orders:", err)
+        setOrders([])
       }
     }
     fetchOrders()
@@ -212,7 +217,7 @@ export default function CookQueue() {
       const pa = priorityWeight(a.priority)
       const pb = priorityWeight(b.priority)
       if (pa !== pb) return pa - pb
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      return new Date(a.orderTime?.placedAt || a.createdAt).getTime() - new Date(b.orderTime?.placedAt || b.createdAt).getTime()
     })
     return arr
   }, [orders])
@@ -221,31 +226,45 @@ export default function CookQueue() {
     return sorted
   }, [sorted])
 
+  const startOrder = async (orderId) => {
+    try {
+      const response = await api.post(`/orders/${orderId}/start`)
+      if (response && response.success) {
+        // Refresh orders
+        const res = await api.get("/orders/kitchen")
+        if (res && res.success && res.data && res.data.orders) {
+          setOrders(res.data.orders)
+        }
+        setNotice(`Order started preparation`)
+        setTimeout(() => setNotice(""), 2000)
+      }
+    } catch (err) {
+      console.error("Failed to start order:", err)
+      alert("Failed to start order")
+    }
+  }
+
   const updateOrderItem = async (orderId, itemIndex, patch) => {
     try {
-      const order = orders.find((o) => o._id === orderId)
-      if (!order) return
+      const response = await api.put(`/orders/${orderId}/items/${itemIndex}`, patch)
+      
+      if (response && response.success) {
+        // Update local state
+        setOrders((prev) =>
+          prev.map((o) => {
+            if (o.orderId !== orderId) return o
+            return response.data.order
+          }),
+        )
 
-      const updatedItems = order.items.map((it, idx) => (idx === itemIndex ? { ...it, ...patch } : it))
-
-      await api.put(`/orders/${orderId}`, { items: updatedItems })
-
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o._id !== orderId) return o
-          const items = updatedItems
-          const updated = { ...o, items }
-
-          const allReadyOrServed = items.length > 0 && items.every((it) => ["ready", "served"].includes(it.status))
-          if (allReadyOrServed) {
-            playBeep()
-            notify("Order complete", `Order #${o.orderNumber} is ready.`)
-            setNotice(`Order #${o.orderNumber} is ready.`)
-            setTimeout(() => setNotice(""), 2500)
-          }
-          return updated
-        }),
-      )
+        // Check if order is fully ready
+        if (response.data.allReady) {
+          playBeep()
+          notify("Order complete", `Order ${orderId} is ready.`)
+          setNotice(`Order ${orderId} is ready for serving!`)
+          setTimeout(() => setNotice(""), 2500)
+        }
+      }
     } catch (err) {
       console.error("Failed to update order item:", err)
       alert("Failed to update order status")
@@ -286,33 +305,72 @@ export default function CookQueue() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {filtered.map((o) => (
-            <div key={o._id} className="rounded-2xl overflow-hidden shadow-xl bg-slate-800">
+            <div key={o.orderId} className="rounded-2xl overflow-hidden shadow-xl bg-slate-800">
               <div className="flex items-center justify-between px-6 py-5 text-white">
                 <div className="font-semibold">
-                  <div className="text-2xl">Table {o.tableNumber ?? "-"}</div>
+                  <div className="text-2xl">Table {o.tableId ?? "-"}</div>
                   <div className="flex items-center gap-2 text-sm opacity-90 mt-2">
                     <span>👨‍🍳</span>
-                    <Timer since={o.createdAt} />
+                    <Timer since={o.orderTime?.placedAt || o.createdAt} />
                   </div>
+                  {o.estimatedCompletionTime && (
+                    <div className="text-xs opacity-75 mt-1">
+                      Est: {new Date(o.estimatedCompletionTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-2 rounded-lg bg-slate-700 text-sm font-semibold">#{o.orderNumber}</span>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`px-3 py-2 rounded-lg text-sm font-semibold ${
+                    o.priority === 'URGENT' ? 'bg-red-600' :
+                    o.priority === 'HIGH' ? 'bg-orange-600' :
+                    'bg-slate-700'
+                  }`}>
+                    {o.orderId.split('_')[1]?.slice(0, 8)}
+                  </span>
+                  {o.priority !== 'NORMAL' && (
+                    <span className="text-xs px-2 py-1 rounded bg-yellow-500 text-yellow-900 font-bold">
+                      {o.priority}
+                    </span>
+                  )}
                 </div>
               </div>
 
+              {/* Start Order Button */}
+              {o.orderStatus === 'PENDING' && (
+                <div className="px-6 pb-4">
+                  <button
+                    className="w-full h-12 rounded-lg text-base font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-lg"
+                    onClick={() => startOrder(o.orderId)}
+                  >
+                    👨‍🍳 Start Preparing
+                  </button>
+                </div>
+              )}
+
               <div className="p-6 space-y-5">
-                {(o.items || []).map((item, idx) => (
-                  <ItemRow
-                    key={idx}
-                    item={item}
-                    onUpdate={(patch) => updateOrderItem(o._id, idx, patch)}
-                    onShortage={() => openShortage(o, item)}
-                  />
+                {(o.orderedItems || []).map((item, idx) => (
+                  <div key={idx}>
+                    <ItemRow
+                      item={item}
+                      onUpdate={(patch) => updateOrderItem(o.orderId, idx, patch)}
+                      onShortage={() => openShortage(o, item)}
+                    />
+                    {item.preparationTimeMinutes && (
+                      <div className="text-xs text-gray-500 mt-1 ml-1">
+                        ⏱️ Prep time: {item.preparationTimeMinutes} min
+                      </div>
+                    )}
+                    {item.specialInstructions && (
+                      <div className="text-xs text-amber-600 mt-1 ml-1 font-medium">
+                        📝 Note: {item.specialInstructions}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
 
               <div className="px-6 pb-6">
-                {(o.items || []).some((it) => it.status === "ready") && (
+                {(o.orderedItems || []).some((it) => it.status === "READY") && (
                   <button
                     className="w-full h-12 rounded-lg text-base font-semibold bg-slate-900 text-white hover:bg-slate-700 transition"
                     onClick={() => pushReadyToManager(o)}

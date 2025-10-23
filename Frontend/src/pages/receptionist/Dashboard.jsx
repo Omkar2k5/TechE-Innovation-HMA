@@ -380,11 +380,14 @@ export default function ReceptionistDashboard() {
       
       const response = await api.get('/menu')
       
-      if (response && Array.isArray(response)) {
-        // Direct array response
+      if (response && response.success && response.data && response.data.menuItems) {
+        // Extract menuItems from nested response structure
+        setMenuItems(response.data.menuItems.filter(item => item.active !== false))
+      } else if (response && Array.isArray(response)) {
+        // Direct array response (fallback)
         setMenuItems(response.filter(item => item.active !== false))
-      } else if (response && response.success && response.data) {
-        // Wrapped response
+      } else if (response && response.data && Array.isArray(response.data)) {
+        // Wrapped array response (fallback)
         setMenuItems(response.data.filter(item => item.active !== false))
       } else {
         setMenuItems([])
@@ -447,12 +450,15 @@ export default function ReceptionistDashboard() {
       setError(null)
 
       const response = await api.post('/orders', {
-        tableNumber: orderTable.tableId,
+        tableId: orderTable.tableId,
         items: orderItems.map(item => ({
-          menuId: item.menuId,
-          quantity: item.quantity
+          menuItemId: item.menuId,
+          name: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price
         })),
-        priority: 'normal'
+        orderType: 'dine-in',
+        notes: ''
       })
 
       if (response && (response.order || response._id)) {
