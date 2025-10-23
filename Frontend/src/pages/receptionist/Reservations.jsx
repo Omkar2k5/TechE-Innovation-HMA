@@ -49,9 +49,9 @@ export default function ReservationsPage({ allowCreate = true }) {
   // modal mode: 'reservation' or 'walkin'
   const [mode, setMode] = useState('reservation')
   const [selectedTableId, setSelectedTableId] = useState(null)
-  const [showList, setShowList] = useState(false)
+  const [showList, setShowList] = useState(true) // Default to showing list
   // reservation type filter: 'all' | 'walkin' | 'online'
-  const [typeFilter, setTypeFilter] = useState('all')
+  const [typeFilter, setTypeFilter] = useState('all') // Default to 'all'
 
   const matchingTables = useMemo(() => {
     console.log('🔄 Calculating matching tables...')
@@ -128,17 +128,25 @@ export default function ReservationsPage({ allowCreate = true }) {
   }
 
   const confirmReservation = async () => {
-    if (!form.name || !form.phone || !selectedTableId) return
+    // For walk-in: only require persons and table selection
+    // For online reservation: require name, phone, and table
+    if (mode === 'walkin') {
+      if (!selectedTableId || !form.persons) return
+    } else {
+      if (!form.name || !form.phone || !selectedTableId) return
+    }
+    
     const table = tables.find((t) => t.tableId === selectedTableId)
     if (!table) return
 
     try {
+      // For walk-in, use default values for customer details
       const reservationData = {
         reservationType: mode,
         customerDetails: {
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
+          name: mode === 'walkin' ? 'Walk-in Guest' : form.name,
+          email: mode === 'walkin' ? '' : form.email,
+          phone: mode === 'walkin' ? 'N/A' : form.phone,
           guests: form.persons
         },
         tableId: selectedTableId,
@@ -151,13 +159,21 @@ export default function ReservationsPage({ allowCreate = true }) {
 
       const response = await api.post('/reservations', reservationData)
       if (response.success) {
+        // For walk-in, update table status to OCCUPIED instead of RESERVED
+        if (mode === 'walkin') {
+          try {
+            await api.put(`/tables/${selectedTableId}/status`, { status: 'OCCUPIED' })
+          } catch (err) {
+            console.error('Failed to update table status to occupied:', err)
+          }
+        }
+        
         // Refresh reservations and tables
         await fetchReservations()
         await fetchTables(form.persons)
         
-        // Show the list and apply filter for the created reservation type
+        // Show the list (already default true)
         setShowList(true)
-        setTypeFilter(mode === 'walkin' ? 'walkin' : 'online')
         
         closeModal()
       } else {
@@ -316,22 +332,25 @@ export default function ReservationsPage({ allowCreate = true }) {
               </div>
               <div className="text-xs text-slate-500">Status: {r.status}</div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => updateReservationStatus(r.reservationId, 'seated')}
-                disabled={r.status === 'seated' || r.status === 'completed' || r.status === 'cancelled'}
-                className="px-3 py-1 rounded-md bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Seat
-              </button>
-              <button
-                onClick={() => updateReservationStatus(r.reservationId, 'cancelled')}
-                disabled={r.status === 'cancelled' || r.status === 'completed'}
-                className="px-3 py-1 rounded-md bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-            </div>
+            {/* Only show Seat/Cancel buttons for online reservations, not walk-ins */}
+            {(r.reservationType !== 'walkin' && r.reservationType !== 'walk-in') && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => updateReservationStatus(r.reservationId, 'seated')}
+                  disabled={r.status === 'seated' || r.status === 'completed' || r.status === 'cancelled'}
+                  className="px-3 py-1 rounded-md bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Seat
+                </button>
+                <button
+                  onClick={() => updateReservationStatus(r.reservationId, 'cancelled')}
+                  disabled={r.status === 'cancelled' || r.status === 'completed'}
+                  className="px-3 py-1 rounded-md bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </div>
         ))}
         </div>
@@ -353,33 +372,43 @@ export default function ReservationsPage({ allowCreate = true }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
+                {/* For walk-in: only show persons field */}
+                {/* For online reservation: show all fields */}
+                {mode !== 'walkin' && (
+                  <>
+                    <div>
+                      <label className="block text-sm text-slate-600 mb-1">Name *</label>
+                      <input
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+                        placeholder="Customer name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-slate-600 mb-1">Email</label>
+                      <input
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+                        placeholder="customer@email.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-slate-600 mb-1">Phone number *</label>
+                      <input
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+                        placeholder="Phone number"
+                      />
+                    </div>
+                  </>
+                )}
+                
                 <div>
-                  <label className="block text-sm text-slate-600 mb-1">Name</label>
-                  <input
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-600 mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-600 mb-1">Phone number</label>
-                  <input
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-600 mb-1">Number of persons</label>
+                  <label className="block text-sm text-slate-600 mb-1">Number of persons *</label>
                   <input
                     type="number"
                     min={1}
@@ -455,10 +484,14 @@ export default function ReservationsPage({ allowCreate = true }) {
               {/* View Reservations removed per request */}
               <button
                 onClick={confirmReservation}
-                disabled={!form.name || !form.phone || !selectedTableId}
+                disabled={
+                  mode === 'walkin' 
+                    ? !selectedTableId || !form.persons
+                    : !form.name || !form.phone || !selectedTableId
+                }
                 className="px-3 py-2 rounded-md bg-slate-800 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Confirm Reservation
+                {mode === 'walkin' ? 'Confirm Walk-in' : 'Confirm Reservation'}
               </button>
             </div>
           </div>

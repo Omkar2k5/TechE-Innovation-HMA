@@ -37,11 +37,20 @@ const ElapsedTimer = ({ since }) => {
 }
 
 // Countdown Timer Component (shows time remaining until estimated completion)
-const CountdownTimer = ({ estimatedCompletionTime, startedAt }) => {
+const CountdownTimer = ({ estimatedCompletionTime, orderStatus }) => {
   const [remaining, setRemaining] = useState(0)
   const [isOvertime, setIsOvertime] = useState(false)
+  const [isStopped, setIsStopped] = useState(false)
   
   useEffect(() => {
+    // Stop timer if order is READY or SERVED
+    if (orderStatus === 'READY' || orderStatus === 'SERVED') {
+      setIsStopped(true)
+      return
+    }
+    
+    setIsStopped(false)
+    
     const updateRemaining = () => {
       const now = Date.now()
       const completionTime = new Date(estimatedCompletionTime).getTime()
@@ -60,10 +69,18 @@ const CountdownTimer = ({ estimatedCompletionTime, startedAt }) => {
     const interval = setInterval(updateRemaining, 1000)
     
     return () => clearInterval(interval)
-  }, [estimatedCompletionTime])
+  }, [estimatedCompletionTime, orderStatus])
   
   const minutes = Math.floor(remaining / 60)
   const seconds = remaining % 60
+  
+  if (isStopped) {
+    return (
+      <span className="font-mono text-sm font-bold text-green-600">
+        COMPLETED
+      </span>
+    )
+  }
   
   return (
     <span className={`font-mono text-sm font-bold ${
@@ -449,7 +466,7 @@ export default function CookDashboard() {
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Table {order.tableId}</h3>
                   <div className="flex flex-col gap-1 mt-1">
-                    {/* Show elapsed time since order placed */}
+                    {/* Always show elapsed time since order was CREATED (placedAt) */}
                     <div className="flex items-center gap-1 text-xs text-slate-500">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -458,8 +475,8 @@ export default function CookDashboard() {
                       <ElapsedTimer since={order.orderTime?.placedAt} />
                     </div>
                     
-                    {/* Show countdown if cooking has started */}
-                    {order.orderStatus !== 'PENDING' && order.estimatedCompletionTime && (
+                    {/* Show countdown ONLY if cooking has started (not PENDING) and has estimated time */}
+                    {order.orderStatus !== 'PENDING' && order.orderTime?.startedPreparationAt && order.estimatedCompletionTime && (
                       <div className="flex items-center gap-1 text-sm">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -467,15 +484,15 @@ export default function CookDashboard() {
                         <span className="text-xs text-slate-600">Time Left:</span>
                         <CountdownTimer 
                           estimatedCompletionTime={order.estimatedCompletionTime}
-                          startedAt={order.orderTime?.startedPreparationAt}
+                          orderStatus={order.orderStatus}
                         />
                       </div>
                     )}
                     
-                    {/* Show estimated time if not started */}
+                    {/* Show static estimated time if order hasn't started yet */}
                     {order.orderStatus === 'PENDING' && order.estimatedCompletionTime && (
                       <div className="text-xs text-slate-500">
-                        Est. completion: {new Date(order.estimatedCompletionTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        Est. time: {Math.max(...order.orderedItems.map(item => item.preparationTimeMinutes || 0))} min
                       </div>
                     )}
                   </div>
