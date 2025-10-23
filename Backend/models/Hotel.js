@@ -35,7 +35,7 @@ const roleSchema = new Schema({
   role: {
     type: String,
     required: true,
-    enum: ['owner', 'receptionalist', 'cook', 'manager']
+    enum: ['owner', 'receptionalist', 'cook', 'manager', 'waiter']
   },
   features: featuresSchema,
   // Owner-specific fields
@@ -58,7 +58,12 @@ const roleSchema = new Schema({
   "Cook Name": { type: String },
   "Cook Email": { type: String },
   "Cook Phone": { type: String },
-  "Cook Password": { type: String }
+  "Cook Password": { type: String },
+  // Waiter-specific fields
+  "Waiter Name": { type: String },
+  "Waiter Email": { type: String },
+  "Waiter Phone": { type: String },
+  "Waiter Password": { type: String }
 }, { _id: false });
 
 // Main Hotel Schema

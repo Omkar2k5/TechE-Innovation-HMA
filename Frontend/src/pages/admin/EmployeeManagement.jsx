@@ -71,8 +71,11 @@ const EmployeeManagement = () => {
       const response = await api.post('/employees/add', formData);
       
       if (response && response.success) {
+        // Only show credentials notification for non-waiter roles
+        if (formData.role !== 'waiter') {
+          setGeneratedCredentials(response.employee);
+        }
         setMessage({ type: 'success', text: response.message });
-        setGeneratedCredentials(response.employee);
         setFormData({
           role: '',
           employeeName: '',
@@ -92,21 +95,21 @@ const EmployeeManagement = () => {
     }
   };
 
-  const handleResetPassword = async (role) => {
-    if (!confirm(`Are you sure you want to reset the password for ${role}?`)) {
+  const handleResetPassword = async (roleId, roleName) => {
+    if (!confirm(`Are you sure you want to reset the password for ${roleName}?`)) {
       return;
     }
 
     try {
       const response = await api.put('/employees/update', {
-        role: role,
+        roleId: roleId,
         resetPassword: true
       });
       
       if (response && response.success) {
-        setMessage({ type: 'success', text: `Password reset for ${role}` });
+        setMessage({ type: 'success', text: `Password reset for ${roleName}` });
         setGeneratedCredentials({
-          role: role,
+          role: roleName,
           password: response.newPassword,
           email: response.employee.email
         });
@@ -118,13 +121,16 @@ const EmployeeManagement = () => {
     }
   };
 
-  const handleRemoveEmployee = async (role) => {
-    if (!confirm(`Are you sure you want to remove credentials for ${role}? This cannot be undone.`)) {
+  const handleRemoveEmployee = async (roleId, employeeName) => {
+    if (!confirm(`Are you sure you want to remove ${employeeName}? This cannot be undone.`)) {
       return;
     }
 
     try {
-      const response = await api.delete('/employees/remove', { role: role });
+      console.log('Removing employee with roleId:', roleId);
+      const response = await api.delete('/employees/remove', { roleId: roleId });
+      
+      console.log('Remove response:', response);
       
       if (response && response.success) {
         setMessage({ type: 'success', text: response.message });
@@ -183,16 +189,24 @@ const EmployeeManagement = () => {
           {generatedCredentials && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
               <h3 className="text-lg font-semibold text-yellow-800 mb-2">
-                🔑 Generated Credentials
+                {generatedCredentials.password ? '🔑 Generated Credentials' : '✅ Employee Added'}
               </h3>
               <div className="bg-white p-3 rounded border">
                 <p><strong>Role:</strong> {generatedCredentials.role}</p>
                 <p><strong>Email:</strong> {generatedCredentials.email}</p>
-                <p><strong>Password:</strong> <span className="font-mono bg-gray-100 px-2 py-1 rounded">{generatedCredentials.password}</span></p>
+                {generatedCredentials.password && (
+                  <p><strong>Password:</strong> <span className="font-mono bg-gray-100 px-2 py-1 rounded">{generatedCredentials.password}</span></p>
+                )}
               </div>
-              <p className="text-sm text-yellow-700 mt-2">
-                ⚠️ Please share these credentials with the employee securely. The password will not be shown again.
-              </p>
+              {generatedCredentials.password ? (
+                <p className="text-sm text-yellow-700 mt-2">
+                  ⚠️ Please share these credentials with the employee securely. The password will not be shown again.
+                </p>
+              ) : (
+                <p className="text-sm text-yellow-700 mt-2">
+                  ℹ️ Employee added successfully. No login credentials needed for this role.
+                </p>
+              )}
               <button 
                 onClick={() => setGeneratedCredentials(null)}
                 className="mt-2 text-yellow-800 hover:text-yellow-900 underline"
@@ -223,6 +237,7 @@ const EmployeeManagement = () => {
                       <option value="manager">Manager</option>
                       <option value="receptionalist">Receptionist</option>
                       <option value="cook">Cook</option>
+                      <option value="waiter">Waiter</option>
                     </select>
                   </div>
                   
@@ -268,44 +283,46 @@ const EmployeeManagement = () => {
                   </div>
                 </div>
 
-                {/* Features */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Access Features
-                  </label>
-                  <div className="flex space-x-6">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="features.feature1"
-                        checked={formData.features.feature1}
-                        onChange={handleInputChange}
-                        className="mr-2"
-                      />
-                      Feature 1
+                {/* Features - Hide for waiter role */}
+                {formData.role && formData.role !== 'waiter' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Access Features
                     </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="features.feature2"
-                        checked={formData.features.feature2}
-                        onChange={handleInputChange}
-                        className="mr-2"
-                      />
-                      Feature 2
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="features.feature3"
-                        checked={formData.features.feature3}
-                        onChange={handleInputChange}
-                        className="mr-2"
-                      />
-                      Feature 3
-                    </label>
+                    <div className="flex space-x-6">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          name="features.feature1"
+                          checked={formData.features.feature1}
+                          onChange={handleInputChange}
+                          className="mr-2"
+                        />
+                        Feature 1
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          name="features.feature2"
+                          checked={formData.features.feature2}
+                          onChange={handleInputChange}
+                          className="mr-2"
+                        />
+                        Feature 2
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          name="features.feature3"
+                          checked={formData.features.feature3}
+                          onChange={handleInputChange}
+                          className="mr-2"
+                        />
+                        Feature 3
+                      </label>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex space-x-4">
                   <button
@@ -350,31 +367,37 @@ const EmployeeManagement = () => {
                       <p><strong>Phone:</strong> {employee.phone}</p>
                     </div>
                     
-                    <div className="mb-4">
-                      <p className="text-sm font-medium mb-1">Features:</p>
-                      <div className="flex space-x-2">
-                        {Object.entries(employee.features || {}).map(([feature, enabled]) => (
-                          <span
-                            key={feature}
-                            className={`px-2 py-1 rounded text-xs ${
-                              enabled ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'
-                            }`}
-                          >
-                            {feature}
-                          </span>
-                        ))}
+                    {/* Only show features for non-waiter roles */}
+                    {employee.role !== 'waiter' && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium mb-1">Features:</p>
+                        <div className="flex space-x-2">
+                          {Object.entries(employee.features || {}).map(([feature, enabled]) => (
+                            <span
+                              key={feature}
+                              className={`px-2 py-1 rounded text-xs ${
+                                enabled ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'
+                              }`}
+                            >
+                              {feature}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                     
                     <div className="flex space-x-2">
+                      {/* Only show reset password for non-waiter roles */}
+                      {employee.role !== 'waiter' && (
+                        <button
+                          onClick={() => handleResetPassword(employee.roleId, employee.role)}
+                          className="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600 transition-colors"
+                        >
+                          Reset Password
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleResetPassword(employee.role)}
-                        className="bg-yellow-500 text-white px-3 py-1 rounded text-sm hover:bg-yellow-600 transition-colors"
-                      >
-                        Reset Password
-                      </button>
-                      <button
-                        onClick={() => handleRemoveEmployee(employee.role)}
+                        onClick={() => handleRemoveEmployee(employee.roleId, employee.name)}
                         className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors"
                       >
                         Remove

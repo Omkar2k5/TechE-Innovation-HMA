@@ -22,11 +22,11 @@ router.post('/add', protect, authorize('owner'), async (req, res) => {
     }
 
     // Validate role
-    const allowedRoles = ['manager', 'receptionalist', 'cook'];
+    const allowedRoles = ['manager', 'receptionalist', 'cook', 'waiter'];
     if (!allowedRoles.includes(role.toLowerCase())) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role. Must be manager, receptionalist, or cook.'
+        message: 'Invalid role. Must be manager, receptionalist, cook, or waiter.'
       });
     }
 
@@ -38,18 +38,6 @@ router.post('/add', protect, authorize('owner'), async (req, res) => {
         message: 'Hotel not found!'
       });
     }
-
-    // Find the specific role in the hotel
-    const roleIndex = hotel.roles.findIndex(r => r.role.toLowerCase() === role.toLowerCase());
-    if (roleIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        message: `${role} role not found in hotel!`
-      });
-    }
-
-    // Generate password
-    const generatedPassword = generatePassword();
 
     // Determine field names based on role
     let emailFieldName, passwordFieldName, nameFieldName, phoneFieldName;
@@ -73,43 +61,78 @@ router.post('/add', protect, authorize('owner'), async (req, res) => {
         nameFieldName = 'Cook Name';
         phoneFieldName = 'Cook Phone';
         break;
+      case 'waiter':
+        emailFieldName = 'Waiter Email';
+        passwordFieldName = 'Waiter Password'; // Not used, but defined for consistency
+        nameFieldName = 'Waiter Name';
+        phoneFieldName = 'Waiter Phone';
+        break;
     }
 
-    // Update the role with employee information
-    hotel.roles[roleIndex][emailFieldName] = employeeEmail;
-    hotel.roles[roleIndex][passwordFieldName] = generatedPassword;
-    hotel.roles[roleIndex][nameFieldName] = employeeName;
-    
+    // Generate password only for non-waiter roles (waiters don't need login)
+    const generatedPassword = role.toLowerCase() === 'waiter' ? null : generatePassword();
+
+    // Generate unique roleId based on existing roles of same type
+    const existingRolesOfType = hotel.roles.filter(r => r.role.toLowerCase() === role.toLowerCase());
+    const roleNumber = String(existingRolesOfType.length + 1).padStart(3, '0');
+    const rolePrefix = role.substring(0, 3).toUpperCase();
+    const newRoleId = `${rolePrefix}${roleNumber}`;
+
+    // Create new role entry
+    const newRoleEntry = {
+      roleId: newRoleId,
+      role: role.toLowerCase(),
+      [emailFieldName]: employeeEmail,
+      [nameFieldName]: employeeName
+    };
+
+    // Add password only for non-waiter roles
+    if (role.toLowerCase() !== 'waiter' && generatedPassword) {
+      newRoleEntry[passwordFieldName] = generatedPassword;
+    }
+
+    // Add phone if provided
     if (employeePhone) {
-      hotel.roles[roleIndex][phoneFieldName] = employeePhone;
+      newRoleEntry[phoneFieldName] = employeePhone;
     }
 
-    // Update features if provided
-    if (features && typeof features === 'object') {
-      hotel.roles[roleIndex].features = {
-        ...hotel.roles[roleIndex].features,
-        ...features
+    // Add features for non-waiter roles
+    if (role.toLowerCase() !== 'waiter') {
+      newRoleEntry.features = features && typeof features === 'object' ? features : {
+        feature1: false,
+        feature2: false,
+        feature3: false
       };
     }
+
+    // Append the new role entry to the roles array
+    hotel.roles.push(newRoleEntry);
 
     // Save the updated hotel
     hotel.updatedAt = new Date();
     await hotel.save();
 
-    console.log(`✅ Employee added to ${role} role:`, employeeName, employeeEmail);
+    console.log(`✅ Employee added as new ${role} role:`, employeeName, employeeEmail, newRoleId);
 
-    res.status(200).json({
+    // Prepare response
+    const responseData = {
       success: true,
-      message: `${role} credentials added successfully!`,
+      message: `${role} ${role.toLowerCase() === 'waiter' ? 'added' : 'credentials added'} successfully!`,
       employee: {
         role: role,
         name: employeeName,
         email: employeeEmail,
         phone: employeePhone,
-        password: generatedPassword, // Return password so owner can share it
-        roleId: hotel.roles[roleIndex].roleId
+        roleId: newRoleId
       }
-    });
+    };
+
+    // Include password only for non-waiter roles
+    if (role.toLowerCase() !== 'waiter' && generatedPassword) {
+      responseData.employee.password = generatedPassword;
+    }
+
+    res.status(200).json(responseData);
 
   } catch (error) {
     console.error('❌ Add Employee Error:', error);
@@ -150,9 +173,11 @@ router.get('/', protect, authorize('owner'), async (req, res) => {
 
         // Check for employee information based on role
         const roleType = role.role.toLowerCase();
-        const emailField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Email`;
-        const nameField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Name`;
-        const phoneField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Phone`;
+        // Capitalize first letter for field names
+        const roleTypeCap = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+        const emailField = `${roleTypeCap} Email`;
+        const nameField = `${roleTypeCap} Name`;
+        const phoneField = `${roleTypeCap} Phone`;
 
         if (role[emailField]) {
           employee.email = role[emailField];
@@ -192,14 +217,14 @@ router.get('/', protect, authorize('owner'), async (req, res) => {
 // @access  Private (Owner only)
 router.put('/update', protect, authorize('owner'), async (req, res) => {
   try {
-    const { role, employeeName, employeeEmail, employeePhone, resetPassword } = req.body;
+    const { roleId, employeeName, employeeEmail, employeePhone, resetPassword } = req.body;
     const hotelId = req.user.hotelId;
 
     // Validation
-    if (!role) {
+    if (!roleId) {
       return res.status(400).json({
         success: false,
-        message: 'Role is required!'
+        message: 'Role ID is required!'
       });
     }
 
@@ -212,21 +237,30 @@ router.put('/update', protect, authorize('owner'), async (req, res) => {
       });
     }
 
-    // Find the specific role
-    const roleIndex = hotel.roles.findIndex(r => r.role.toLowerCase() === role.toLowerCase());
+    // Find the specific role by roleId
+    const roleIndex = hotel.roles.findIndex(r => r.roleId === roleId);
     if (roleIndex === -1) {
       return res.status(404).json({
         success: false,
-        message: `${role} role not found!`
+        message: `Employee with role ID ${roleId} not found!`
       });
     }
 
-    // Determine field names
-    const roleType = role.toLowerCase();
-    const emailField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Email`;
-    const nameField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Name`;
-    const phoneField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Phone`;
-    const passwordField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Password`;
+    // Get the role type from the found role entry
+    const roleType = hotel.roles[roleIndex].role.toLowerCase();
+    const roleTypeCap = roleType.charAt(0).toUpperCase() + roleType.slice(1);
+    const emailField = `${roleTypeCap} Email`;
+    const nameField = `${roleTypeCap} Name`;
+    const phoneField = `${roleTypeCap} Phone`;
+    const passwordField = `${roleTypeCap} Password`;
+    
+    // Don't allow password reset for waiters
+    if (resetPassword && roleType === 'waiter') {
+      return res.status(400).json({
+        success: false,
+        message: 'Waiters do not have login credentials. Password reset is not applicable.'
+      });
+    }
 
     // Update fields if provided
     if (employeeName) {
@@ -251,9 +285,9 @@ router.put('/update', protect, authorize('owner'), async (req, res) => {
 
     const response = {
       success: true,
-      message: `${role} information updated successfully!`,
+      message: `Employee information updated successfully!`,
       employee: {
-        role: role,
+        role: roleType,
         name: hotel.roles[roleIndex][nameField],
         email: hotel.roles[roleIndex][emailField],
         phone: hotel.roles[roleIndex][phoneField]
@@ -281,14 +315,14 @@ router.put('/update', protect, authorize('owner'), async (req, res) => {
 // @access  Private (Owner only)
 router.delete('/remove', protect, authorize('owner'), async (req, res) => {
   try {
-    const { role } = req.body;
+    const { roleId } = req.body;
     const hotelId = req.user.hotelId;
 
     // Validation
-    if (!role) {
+    if (!roleId) {
       return res.status(400).json({
         success: false,
-        message: 'Role is required!'
+        message: 'Role ID is required!'
       });
     }
 
@@ -301,35 +335,31 @@ router.delete('/remove', protect, authorize('owner'), async (req, res) => {
       });
     }
 
-    // Find the specific role
-    const roleIndex = hotel.roles.findIndex(r => r.role.toLowerCase() === role.toLowerCase());
+    // Find the specific role by roleId
+    const roleIndex = hotel.roles.findIndex(r => r.roleId === roleId);
     if (roleIndex === -1) {
       return res.status(404).json({
         success: false,
-        message: `${role} role not found!`
+        message: `Employee with role ID ${roleId} not found!`
       });
     }
 
-    // Determine field names and remove credentials
-    const roleType = role.toLowerCase();
-    const emailField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Email`;
-    const nameField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Name`;
-    const phoneField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Phone`;
-    const passwordField = `${roleType.charAt(0).toUpperCase() + roleType.slice(1)} Password`;
-
-    // Remove employee fields by setting to undefined (works better with Mongoose schemas)
-    hotel.roles[roleIndex][emailField] = undefined;
-    hotel.roles[roleIndex][nameField] = undefined;
-    hotel.roles[roleIndex][phoneField] = undefined;
-    hotel.roles[roleIndex][passwordField] = undefined;
+    // Get employee info before removing
+    const removedRole = hotel.roles[roleIndex];
+    const employeeName = removedRole[`${removedRole.role.charAt(0).toUpperCase() + removedRole.role.slice(1)} Name`] || removedRole.role;
+    
+    // Remove the entire role entry from the array
+    hotel.roles.splice(roleIndex, 1);
 
     // Save the updated hotel
     hotel.updatedAt = new Date();
     await hotel.save();
 
+    console.log(`✅ Employee removed: ${employeeName} (${roleId})`);
+
     res.status(200).json({
       success: true,
-      message: `${role} credentials removed successfully!`
+      message: `${employeeName} removed successfully!`
     });
 
   } catch (error) {
