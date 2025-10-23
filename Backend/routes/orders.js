@@ -221,9 +221,29 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
       });
     }
 
-    // Generate unique IDs
-    const orderId = `ORD_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-    const billId = `BILL_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    // Check if there's an existing active order/bill for this table
+    // If the last bill for this table is PAID, create new order/bill (new customer)
+    // Otherwise, append items to existing order/bill
+    const existingTableBills = billDocument.bills.filter(b => b.tableId === tableId && b.isActive);
+    const lastTableBill = existingTableBills.length > 0 ? existingTableBills[existingTableBills.length - 1] : null;
+    
+    let shouldCreateNew = true;
+    let existingOrder = null;
+    let existingBill = null;
+    
+    if (lastTableBill) {
+      // Check if last bill is PAID (new customer) or PENDING (same customer, append items)
+      if (lastTableBill.paymentDetails?.paymentStatus === 'PAID') {
+        console.log(`💳 Last bill for table ${tableId} is PAID - Creating new order for new customer`);
+        shouldCreateNew = true;
+      } else {
+        console.log(`📝 Found active unpaid bill for table ${tableId} - Appending items to existing order`);
+        shouldCreateNew = false;
+        // Find the corresponding order
+        existingOrder = orderDocument.orders.find(o => o.billId === lastTableBill.billId);
+        existingBill = lastTableBill;
+      }
+    }
 
     // Process items for order (kitchen-focused)
     const orderItems = [];
@@ -274,88 +294,158 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
       });
     }
 
-    // Calculate tax and service charge (5% tax, 2% service charge)
-    const tax = subtotal * 0.05;
-    const serviceCharge = subtotal * 0.02;
-    const grandTotal = subtotal + tax + serviceCharge;
+    if (shouldCreateNew) {
+      // Create new order and bill for new customer
+      const orderId = `ORD_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+      const billId = `BILL_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
-    // Calculate estimated completion time
-    const estimatedCompletion = new Date();
-    estimatedCompletion.setMinutes(estimatedCompletion.getMinutes() + totalEstimatedTime);
+      // Calculate tax and service charge (5% tax, 2% service charge)
+      const tax = subtotal * 0.05;
+      const serviceCharge = subtotal * 0.02;
+      const grandTotal = subtotal + tax + serviceCharge;
 
-    // Create new order (for kitchen)
-    const newOrder = {
-      orderId: orderId,
-      billId: billId,
-      tableId: tableId,
-      orderStatus: 'PENDING',
-      priority: priority || 'NORMAL',
-      orderedItems: orderItems,
-      orderTime: {
-        placedAt: new Date(),
-        startedPreparationAt: null,
-        allItemsReadyAt: null,
-        servedAt: null
-      },
-      waiterAssigned: req.user.email || 'Unknown',
-      cookAssigned: null,
-      estimatedCompletionTime: estimatedCompletion,
-      notes: notes || '',
-      isActive: true
-    };
+      // Calculate estimated completion time
+      const estimatedCompletion = new Date();
+      estimatedCompletion.setMinutes(estimatedCompletion.getMinutes() + totalEstimatedTime);
 
-    // Create new bill (for payment)
-    const newBill = {
-      billId: billId,
-      orderId: orderId,
-      tableId: tableId,
-      customerInfo: {
-        name: customer?.name || 'Walk-in Guest',
-        phone: customer?.phone || '',
-        groupSize: customer?.groupSize || 1
-      },
-      items: billItems,
-      paymentDetails: {
-        subtotal: subtotal,
-        tax: tax,
-        serviceCharge: serviceCharge,
-        discount: 0,
-        grandTotal: grandTotal,
-        paymentMethod: null,
-        paymentStatus: 'PENDING',
-        paidAmount: 0,
-        changeAmount: 0,
-        paidAt: null
-      },
-      waiterAssigned: req.user.email || 'Unknown',
-      billGeneratedAt: new Date(),
-      isActive: true,
-      notes: notes || ''
-    };
-
-    // Add to documents
-    orderDocument.orders.push(newOrder);
-    billDocument.bills.push(newBill);
-
-    // Save both documents
-    await Promise.all([
-      orderDocument.save(),
-      billDocument.save()
-    ]);
-
-    console.log(`✅ Order "${orderId}" and Bill "${billId}" created successfully for table ${tableId}`);
-
-    res.status(201).json({
-      success: true,
-      message: 'Order and bill created successfully',
-      data: {
+      // Create new order (for kitchen)
+      const newOrder = {
         orderId: orderId,
         billId: billId,
-        order: newOrder,
-        bill: newBill,
-        estimatedCompletionTime: estimatedCompletion
+        tableId: tableId,
+        orderStatus: 'PENDING',
+        priority: priority || 'NORMAL',
+        orderedItems: orderItems,
+        orderTime: {
+          placedAt: new Date(),
+          startedPreparationAt: null,
+          allItemsReadyAt: null,
+          servedAt: null
+        },
+        waiterAssigned: req.user.email || 'Unknown',
+        cookAssigned: null,
+        estimatedCompletionTime: estimatedCompletion,
+        notes: notes || '',
+        isActive: true
+      };
+
+      // Create new bill (for payment)
+      const newBill = {
+        billId: billId,
+        orderId: orderId,
+        tableId: tableId,
+        customerInfo: {
+          name: customer?.name || 'Walk-in Guest',
+          phone: customer?.phone || '',
+          groupSize: customer?.groupSize || 1
+        },
+        items: billItems,
+        paymentDetails: {
+          subtotal: subtotal,
+          tax: tax,
+          serviceCharge: serviceCharge,
+          discount: 0,
+          grandTotal: grandTotal,
+          paymentMethod: null,
+          paymentStatus: 'PENDING',
+          paidAmount: 0,
+          changeAmount: 0,
+          paidAt: null
+        },
+        waiterAssigned: req.user.email || 'Unknown',
+        billGeneratedAt: new Date(),
+        isActive: true,
+        notes: notes || ''
+      };
+
+      // Add to documents
+      orderDocument.orders.push(newOrder);
+      billDocument.bills.push(newBill);
+
+      // Save both documents
+      await Promise.all([
+        orderDocument.save(),
+        billDocument.save()
+      ]);
+
+      console.log(`✅ NEW Order "${orderId}" and Bill "${billId}" created for table ${tableId}`);
+
+      res.status(201).json({
+        success: true,
+        message: 'Order and bill created successfully',
+        data: {
+          orderId: orderId,
+          billId: billId,
+          order: newOrder,
+          bill: newBill,
+          estimatedCompletionTime: estimatedCompletion
+        }
+      });
+    } else {
+      // Append items to existing order and bill
+      if (!existingOrder || !existingBill) {
+        return res.status(404).json({
+          success: false,
+          message: 'Could not find existing order/bill to append to'
+        });
       }
-    });
+
+      // Append new items to existing order
+      existingOrder.orderedItems.push(...orderItems);
+      
+      // Update estimated completion time if new items take longer
+      const currentEstimate = new Date(existingOrder.estimatedCompletionTime);
+      const newEstimate = new Date();
+      newEstimate.setMinutes(newEstimate.getMinutes() + totalEstimatedTime);
+      if (newEstimate > currentEstimate) {
+        existingOrder.estimatedCompletionTime = newEstimate;
+      }
+
+      // Append notes if provided
+      if (notes) {
+        existingOrder.notes = existingOrder.notes ? `${existingOrder.notes}; ${notes}` : notes;
+      }
+
+      // Append new items to existing bill
+      existingBill.items.push(...billItems);
+      
+      // Recalculate bill totals
+      const newSubtotal = existingBill.paymentDetails.subtotal + subtotal;
+      const newTax = newSubtotal * 0.05;
+      const newServiceCharge = newSubtotal * 0.02;
+      const newGrandTotal = newSubtotal + newTax + newServiceCharge - existingBill.paymentDetails.discount;
+      
+      existingBill.paymentDetails.subtotal = newSubtotal;
+      existingBill.paymentDetails.tax = newTax;
+      existingBill.paymentDetails.serviceCharge = newServiceCharge;
+      existingBill.paymentDetails.grandTotal = newGrandTotal;
+
+      // Append notes if provided
+      if (notes) {
+        existingBill.notes = existingBill.notes ? `${existingBill.notes}; ${notes}` : notes;
+      }
+
+      // Save both documents
+      await Promise.all([
+        orderDocument.save(),
+        billDocument.save()
+      ]);
+
+      console.log(`✅ APPENDED ${orderItems.length} items to existing order "${existingOrder.orderId}" for table ${tableId}`);
+
+      res.status(200).json({
+        success: true,
+        message: `Items appended to existing order successfully`,
+        data: {
+          orderId: existingOrder.orderId,
+          billId: existingBill.billId,
+          order: existingOrder,
+          bill: existingBill,
+          itemsAdded: orderItems.length,
+          estimatedCompletionTime: existingOrder.estimatedCompletionTime
+        }
+      });
+    }
 
   } catch (error) {
     console.error('❌ Create Order Error:', error);
