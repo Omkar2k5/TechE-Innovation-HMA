@@ -52,6 +52,12 @@ export default function ReservationsPage({ allowCreate = true }) {
   const [showList, setShowList] = useState(true) // Default to showing list
   // reservation type filter: 'all' | 'walkin' | 'online'
   const [typeFilter, setTypeFilter] = useState('all') // Default to 'all'
+  // date filter - default to today
+  const getTodayDateString = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  }
+  const [dateFilter, setDateFilter] = useState(getTodayDateString())
 
   const matchingTables = useMemo(() => {
     console.log('🔄 Calculating matching tables...')
@@ -261,38 +267,65 @@ export default function ReservationsPage({ allowCreate = true }) {
         <div className="text-sm text-slate-600">Upcoming: {upcomingCount}</div>
       )}
 
-      {/* Left-side filter buttons for reservation types */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => {
-            console.log('🔘 Walk-ins filter clicked');
-            setTypeFilter('walkin');
-            setShowList(true);
-          }}
-          className={`px-3 py-1 rounded-md ${typeFilter === 'walkin' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-50'}`}
-        >
-          Walk-ins ({walkinCount})
-        </button>
-        <button
-          onClick={() => {
-            console.log('🔘 Online filter clicked');
-            setTypeFilter('online');
-            setShowList(true);
-          }}
-          className={`px-3 py-1 rounded-md ${typeFilter === 'online' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-50'}`}
-        >
-          Online ({onlineCount})
-        </button>
-        <button
-          onClick={() => {
-            console.log('🔘 Show All filter clicked');
-            setTypeFilter('all');
-            setShowList(true);
-          }}
-          className={`px-3 py-1 rounded-md ${typeFilter === 'all' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-50'}`}
-        >
-          Show All
-        </button>
+      {/* Filter section: type and date */}
+      <div className="space-y-3">
+        {/* Date filter */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-slate-600 font-medium">Filter by Date:</label>
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => {
+              console.log('📅 Date filter changed to:', e.target.value);
+              setDateFilter(e.target.value);
+            }}
+            className="px-3 py-1 rounded-md border border-slate-300 focus:border-slate-500 focus:ring-slate-500"
+          />
+          <button
+            onClick={() => {
+              const today = getTodayDateString();
+              console.log('📅 Reset to today:', today);
+              setDateFilter(today);
+            }}
+            className="px-3 py-1 rounded-md bg-slate-200 text-slate-700 hover:bg-slate-300"
+          >
+            Today
+          </button>
+        </div>
+
+        {/* Reservation type filter buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              console.log('🔘 Walk-ins filter clicked');
+              setTypeFilter('walkin');
+              setShowList(true);
+            }}
+            className={`px-3 py-1 rounded-md ${typeFilter === 'walkin' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-50'}`}
+          >
+            Walk-ins ({walkinCount})
+          </button>
+          <button
+            onClick={() => {
+              console.log('🔘 Online filter clicked');
+              setTypeFilter('online');
+              setShowList(true);
+            }}
+            className={`px-3 py-1 rounded-md ${typeFilter === 'online' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-50'}`}
+          >
+            Online ({onlineCount})
+          </button>
+          <button
+            onClick={() => {
+              console.log('🔘 Show All filter clicked');
+              setTypeFilter('all');
+              setShowList(true);
+            }}
+            className={`px-3 py-1 rounded-md ${typeFilter === 'all' ? 'bg-slate-800 text-white' : 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-50'}`}
+          >
+            Show All
+          </button>
+        </div>
       </div>
 
       {showList && (
@@ -304,10 +337,22 @@ export default function ReservationsPage({ allowCreate = true }) {
             console.log('📊 Show list:', showList);
             
             const filtered = reservations.filter((r) => {
-              if (typeFilter === 'all') return true
-              if (typeFilter === 'walkin') return r.reservationType === 'walkin' || r.reservationType === 'walk-in'
-              if (typeFilter === 'online') return r.reservationType === 'reservation' || r.reservationType === 'online'
-              return true
+              // Filter by type
+              let matchesType = true;
+              if (typeFilter === 'walkin') {
+                matchesType = r.reservationType === 'walkin' || r.reservationType === 'walk-in';
+              } else if (typeFilter === 'online') {
+                matchesType = r.reservationType === 'reservation' || r.reservationType === 'online';
+              }
+              
+              // Filter by date
+              let matchesDate = true;
+              if (dateFilter && r.reservationDate) {
+                const reservationDate = new Date(r.reservationDate).toISOString().split('T')[0];
+                matchesDate = reservationDate === dateFilter;
+              }
+              
+              return matchesType && matchesDate;
             });
             
             console.log('✅ Filtered reservations:', filtered.length);
