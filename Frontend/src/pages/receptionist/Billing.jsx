@@ -552,7 +552,7 @@ export default function BillingPage() {
     }
   }
 
-  // Calculate statistics based on new schema
+  // Calculate statistics based on payment status (not order status)
   const stats = useMemo(() => {
     if (!orders || orders.length === 0) {
       return {
@@ -565,28 +565,29 @@ export default function BillingPage() {
       }
     }
 
-    const ongoingOrders = orders.filter(order => order.orderStatus === 'ONGOING')
-    const completedOrders = orders.filter(order => order.orderStatus === 'COMPLETED')
-    const pendingPayments = orders.filter(order => order.billDetails?.paymentStatus === 'PENDING')
-    const paidOrders = orders.filter(order => order.billDetails?.paymentStatus === 'PAID')
+    // Ongoing = PENDING payment, Completed = PAID payment
+    const ongoingOrders = orders.filter(order => order.billDetails?.paymentStatus === 'PENDING')
+    const completedOrders = orders.filter(order => order.billDetails?.paymentStatus === 'PAID')
     
     return {
       totalOrders: orders.length,
       ongoingOrders: ongoingOrders.length,
       completedOrders: completedOrders.length,
-      pendingPayments: pendingPayments.length,
-      totalRevenue: paidOrders.reduce((sum, order) => sum + (order.billDetails?.grandTotal || 0), 0),
-      pendingAmount: pendingPayments.reduce((sum, order) => sum + (order.billDetails?.grandTotal || 0), 0)
+      pendingPayments: ongoingOrders.length,
+      totalRevenue: completedOrders.reduce((sum, order) => sum + (order.billDetails?.grandTotal || 0), 0),
+      pendingAmount: ongoingOrders.reduce((sum, order) => sum + (order.billDetails?.grandTotal || 0), 0)
     }
   }, [orders])
 
-  // Filter orders based on active tab
+  // Filter orders based on active tab - using payment status instead of order status
   const filteredOrders = useMemo(() => {
     switch (activeTab) {
       case 'ongoing':
-        return orders.filter(order => order.orderStatus === 'ONGOING')
+        // Ongoing = PENDING payment status
+        return orders.filter(order => order.billDetails?.paymentStatus === 'PENDING')
       case 'completed':
-        return orders.filter(order => order.orderStatus === 'COMPLETED')
+        // Completed = PAID payment status
+        return orders.filter(order => order.billDetails?.paymentStatus === 'PAID')
       case 'all':
       default:
         return orders

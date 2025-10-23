@@ -1,5 +1,6 @@
 import express from 'express';
 import Bill from '../models/Bill.js';
+import Table from '../models/Table.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -185,6 +186,23 @@ router.put('/:billId/payment', protect, authorize('receptionist', 'manager', 'ow
         bill.paymentDetails.paidAt = new Date();
         bill.paymentDetails.paidAmount = paidAmount || bill.paymentDetails.grandTotal;
         bill.paymentDetails.changeAmount = Math.max(0, bill.paymentDetails.paidAmount - bill.paymentDetails.grandTotal);
+        
+        // Update table status to VACANT when payment is completed
+        const tableId = bill.tableId;
+        if (tableId) {
+          try {
+            console.log(`🪑 Updating table ${tableId} status to VACANT after payment`);
+            await Table.findByIdAndUpdate(
+              tableId,
+              { status: 'VACANT' },
+              { new: true }
+            );
+            console.log(`✅ Table ${tableId} marked as VACANT`);
+          } catch (tableError) {
+            console.error(`⚠️ Failed to update table ${tableId} status:`, tableError);
+            // Don't fail the payment update if table update fails
+          }
+        }
       }
     }
 

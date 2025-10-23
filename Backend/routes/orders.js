@@ -221,28 +221,42 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
       });
     }
 
-    // Check if there's an existing active order/bill for this table
+    // Check if there's an existing unpaid bill for this table
     // If the last bill for this table is PAID, create new order/bill (new customer)
     // Otherwise, append items to existing order/bill
-    const existingTableBills = billDocument.bills.filter(b => b.tableId === tableId && b.isActive);
-    const lastTableBill = existingTableBills.length > 0 ? existingTableBills[existingTableBills.length - 1] : null;
+    
+    // Filter all bills for this table that are NOT paid
+    const unpaidTableBills = billDocument.bills.filter(b => 
+      b.tableId === tableId && 
+      b.isActive && 
+      b.paymentDetails?.paymentStatus !== 'PAID'
+    );
+    
+    console.log(`🔍 Checking table ${tableId} for existing unpaid bills...`);
+    console.log(`📊 Found ${unpaidTableBills.length} unpaid bills for table ${tableId}`);
     
     let shouldCreateNew = true;
     let existingOrder = null;
     let existingBill = null;
     
-    if (lastTableBill) {
-      // Check if last bill is PAID (new customer) or PENDING (same customer, append items)
-      if (lastTableBill.paymentDetails?.paymentStatus === 'PAID') {
-        console.log(`💳 Last bill for table ${tableId} is PAID - Creating new order for new customer`);
-        shouldCreateNew = true;
-      } else {
-        console.log(`📝 Found active unpaid bill for table ${tableId} - Appending items to existing order`);
-        shouldCreateNew = false;
-        // Find the corresponding order
-        existingOrder = orderDocument.orders.find(o => o.billId === lastTableBill.billId);
-        existingBill = lastTableBill;
+    if (unpaidTableBills.length > 0) {
+      // Get the most recent unpaid bill
+      const lastUnpaidBill = unpaidTableBills[unpaidTableBills.length - 1];
+      console.log(`📝 Found unpaid bill ${lastUnpaidBill.billId} for table ${tableId} with status: ${lastUnpaidBill.paymentDetails?.paymentStatus}`);
+      console.log(`➡️ Appending items to existing order/bill instead of creating new`);
+      
+      shouldCreateNew = false;
+      // Find the corresponding order
+      existingOrder = orderDocument.orders.find(o => o.billId === lastUnpaidBill.billId);
+      existingBill = lastUnpaidBill;
+      
+      if (!existingOrder) {
+        console.warn(`⚠️ Could not find order for bill ${lastUnpaidBill.billId}`);
+        shouldCreateNew = true; // Fallback to creating new if order not found
       }
+    } else {
+      console.log(`✅ No unpaid bills found for table ${tableId} - Creating new order/bill`);
+      shouldCreateNew = true;
     }
 
     // Process items for order (kitchen-focused)
