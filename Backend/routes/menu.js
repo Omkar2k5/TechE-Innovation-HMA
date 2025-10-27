@@ -485,4 +485,149 @@ router.delete('/ingredients/:ingredientName', protect, authorize('receptionist',
   }
 });
 
+// @desc    Add saved ingredient with stock management
+// @route   POST /api/menu/ingredients
+// @access  Private (Manager, Owner)
+router.post('/ingredients', protect, authorize('manager', 'owner'), async (req, res) => {
+  try {
+    const { name, category, stock, unit } = req.body;
+    const hotelId = req.user.hotelId;
+
+    console.log('➕ Adding ingredient with stock:', { hotelId, name, stock, unit });
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ingredient name is required'
+      });
+    }
+
+    // Find or create menu document
+    let menuDocument = await Menu.findById(hotelId);
+
+    if (!menuDocument) {
+      const Hotel = (await import('../models/Hotel.js')).default;
+      const hotel = await Hotel.findById(hotelId);
+      
+      if (!hotel) {
+        return res.status(404).json({
+          success: false,
+          message: 'Hotel not found'
+        });
+      }
+
+      menuDocument = new Menu({
+        _id: hotelId,
+        hotelName: hotel.name,
+        menuItems: [],
+        savedIngredients: [],
+        menuCategories: []
+      });
+    }
+
+    // Check if ingredient already exists
+    const existing = menuDocument.savedIngredients.find(ing => 
+      ing.name.toLowerCase() === name.toLowerCase()
+    );
+
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: 'Ingredient already exists'
+      });
+    }
+
+    // Add new ingredient with stock info
+    const newIngredient = {
+      name: name.trim(),
+      category: category || 'other',
+      stock: stock || 0,
+      unit: unit || 'grams',
+      isActive: true
+    };
+
+    menuDocument.savedIngredients.push(newIngredient);
+    await menuDocument.save();
+
+    console.log(`✅ Ingredient "${name}" added with stock: ${stock} ${unit}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Ingredient added successfully',
+      data: {
+        ingredient: newIngredient,
+        totalIngredients: menuDocument.savedIngredients.length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Add Ingredient Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred while adding ingredient',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// @desc    Update ingredient stock
+// @route   PUT /api/menu/ingredients/:ingredientName/stock
+// @access  Private (Manager, Owner, Cook)
+router.put('/ingredients/:ingredientName/stock', protect, authorize('manager', 'owner', 'cook'), async (req, res) => {
+  try {
+    const { ingredientName } = req.params;
+    const { stock, adjustment } = req.body;
+    const hotelId = req.user.hotelId;
+
+    console.log('🔄 Updating ingredient stock:', { hotelId, ingredientName, stock, adjustment });
+
+    const menuDocument = await Menu.findById(hotelId);
+
+    if (!menuDocument) {
+      return res.status(404).json({
+        success: false,
+        message: 'Hotel menu not found'
+      });
+    }
+
+    const ingredient = menuDocument.savedIngredients.find(ing => 
+      ing.name.toLowerCase() === ingredientName.toLowerCase()
+    );
+
+    if (!ingredient) {
+      return res.status(404).json({
+        success: false,
+        message: `Ingredient "${ingredientName}" not found`
+      });
+    }
+
+    // Update stock - either set directly or adjust
+    if (stock !== undefined) {
+      ingredient.stock = Math.max(0, stock);
+    } else if (adjustment !== undefined) {
+      ingredient.stock = Math.max(0, (ingredient.stock || 0) + adjustment);
+    }
+
+    await menuDocument.save();
+
+    console.log(`✅ Ingredient "${ingredientName}" stock updated to: ${ingredient.stock}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Stock updated successfully',
+      data: {
+        ingredient: ingredient
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Update Stock Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred while updating stock',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
 export default router;
