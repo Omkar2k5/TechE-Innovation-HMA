@@ -2,6 +2,67 @@ import React, { useState, useEffect, useMemo } from 'react'
 import api from '../../lib/api'
 import { useAuth } from '../../auth/AuthContext'
 
+// Countdown Timer Component - shows time remaining until estimated completion
+const CountdownTimer = ({ estimatedCompletionTime, orderStatus, startedAt }) => {
+  const [display, setDisplay] = useState('')
+  const [isOvertime, setIsOvertime] = useState(false)
+  
+  useEffect(() => {
+    // Don't show timer if order is completed/served or hasn't started cooking
+    if (!estimatedCompletionTime || !startedAt || ['READY', 'SERVED', 'COMPLETED'].includes(orderStatus)) {
+      return
+    }
+    
+    const updateTimer = () => {
+      const now = Date.now()
+      const completionTime = new Date(estimatedCompletionTime).getTime()
+      const diff = Math.floor((completionTime - now) / 1000)
+      
+      if (diff < 0) {
+        setIsOvertime(true)
+        const overtime = Math.abs(diff)
+        const minutes = Math.floor(overtime / 60)
+        const seconds = overtime % 60
+        setDisplay(`+${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`)
+      } else {
+        setIsOvertime(false)
+        const minutes = Math.floor(diff / 60)
+        const seconds = diff % 60
+        setDisplay(`${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`)
+      }
+    }
+    
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+    
+    return () => clearInterval(interval)
+  }, [estimatedCompletionTime, orderStatus, startedAt])
+  
+  // Show "Not Started" if order is PENDING
+  if (orderStatus === 'PENDING') {
+    return <span className="font-mono text-sm text-slate-500">Not Started</span>
+  }
+  
+  // Show "Ready" if order is completed
+  if (['READY', 'SERVED', 'COMPLETED'].includes(orderStatus)) {
+    return <span className="font-mono text-sm font-bold text-green-600">READY</span>
+  }
+  
+  // Don't show timer if cooking hasn't started
+  if (!startedAt) {
+    return <span className="font-mono text-sm text-slate-500">Waiting...</span>
+  }
+  
+  return (
+    <span className={`font-mono text-sm font-bold ${
+      isOvertime ? 'text-red-600' : 'text-blue-600'
+    }`}>
+      {display}
+      {isOvertime && ' ⏰'}
+    </span>
+  )
+}
+
 // Icon Components
 const Icons = {
   Plus: ({ className }) => (

@@ -49,6 +49,36 @@ router.get('/', protect, authorize('admin', 'receptionist'), async (req, res) =>
   }
 });
 
+// Get all reservations without date filter (must be before parameterized routes)
+router.get('/all', protect, authorize('admin', 'receptionist'), async (req, res) => {
+  try {
+    const hotelId = req.user.hotelId;
+    
+    // Find reservation document for this hotel
+    let reservationDoc = await Reservation.findOne({ _id: hotelId });
+    
+    if (!reservationDoc) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
+
+    // Return all reservations regardless of date
+    res.json({
+      success: true,
+      data: reservationDoc.reservations || []
+    });
+  } catch (error) {
+    console.error('Error fetching all reservations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch all reservations',
+      error: error.message
+    });
+  }
+});
+
 // Get available tables for reservation
 router.get('/available-tables', protect, authorize('admin', 'receptionist'), async (req, res) => {
   try {

@@ -10,11 +10,23 @@ const Card = ({ title, value, className }) => (
   </div>
 )
 
-// Elapsed Timer Component (shows time since order placed)
-const ElapsedTimer = ({ since }) => {
+// Elapsed Timer Component (shows time since order placed, stops when cooking starts)
+const ElapsedTimer = ({ since, orderStatus }) => {
   const [elapsed, setElapsed] = useState(0)
+  const [isStopped, setIsStopped] = useState(false)
   
   useEffect(() => {
+    // Stop timer if order has started cooking (status is not PENDING)
+    if (orderStatus && orderStatus !== 'PENDING') {
+      setIsStopped(true)
+      // Calculate final elapsed time when it stopped
+      const diff = Math.floor((Date.now() - new Date(since).getTime()) / 1000)
+      setElapsed(Math.max(0, diff))
+      return
+    }
+    
+    setIsStopped(false)
+    
     const updateElapsed = () => {
       const diff = Math.floor((Date.now() - new Date(since).getTime()) / 1000)
       setElapsed(Math.max(0, diff))
@@ -24,7 +36,7 @@ const ElapsedTimer = ({ since }) => {
     const interval = setInterval(updateElapsed, 1000)
     
     return () => clearInterval(interval)
-  }, [since])
+  }, [since, orderStatus])
   
   const minutes = Math.floor(elapsed / 60)
   const seconds = elapsed % 60
@@ -276,7 +288,8 @@ export default function CookDashboard() {
   
   useEffect(() => {
     fetchOrders()
-    const interval = setInterval(fetchOrders, 5000)
+    // Auto-refresh every 3 seconds to show new orders without manual refresh
+    const interval = setInterval(fetchOrders, 3000)
     return () => clearInterval(interval)
   }, [])
   
@@ -356,7 +369,7 @@ export default function CookDashboard() {
       })
     }
     
-    // Sort by priority and timestamp
+    // Sort by priority and timestamp (newest first to show at top)
     return filtered.sort((a, b) => {
       // Priority weight
       const priorityWeight = { URGENT: 0, HIGH: 1, NORMAL: 2, LOW: 3 }
@@ -367,8 +380,8 @@ export default function CookDashboard() {
         return aPriority - bPriority
       }
       
-      // Then by timestamp (oldest first)
-      return new Date(a.orderTime?.placedAt) - new Date(b.orderTime?.placedAt)
+      // Then by timestamp (NEWEST first - reversed order to show new orders at top)
+      return new Date(b.orderTime?.placedAt) - new Date(a.orderTime?.placedAt)
     })
   }, [orders, filter, fastPrepOnly])
   
@@ -466,13 +479,13 @@ export default function CookDashboard() {
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Table {order.tableId}</h3>
                   <div className="flex flex-col gap-1 mt-1">
-                    {/* Always show elapsed time since order was CREATED (placedAt) */}
+                    {/* Show elapsed time since order was CREATED (stops when cooking starts) */}
                     <div className="flex items-center gap-1 text-xs text-slate-500">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>Received:</span>
-                      <ElapsedTimer since={order.orderTime?.placedAt} />
+                      <ElapsedTimer since={order.orderTime?.placedAt} orderStatus={order.orderStatus} />
                     </div>
                     
                     {/* Show countdown ONLY if cooking has started (not PENDING) and has estimated time */}

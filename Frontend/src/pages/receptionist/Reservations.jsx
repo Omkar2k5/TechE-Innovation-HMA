@@ -109,6 +109,29 @@ export default function ReservationsPage({ allowCreate = true }) {
     }
   }
 
+  // Fetch all reservations from all dates
+  const fetchAllReservations = async () => {
+    try {
+      console.log('🔍 Fetching all reservations from all dates...');
+      const response = await api.get('/reservations/all')
+      console.log('📋 All Reservations API response:', response);
+      
+      if (response.success) {
+        console.log('✅ All reservations loaded:', response.data.length, 'reservations');
+        console.log('📊 All reservation data:', response.data);
+        setReservations(response.data)
+        // Clear date filter to show all dates
+        setDateFilter('')
+      } else {
+        console.error('❌ Failed to load all reservations:', response.message);
+        setError(response.message)
+      }
+    } catch (error) {
+      console.error('💥 Error fetching all reservations:', error);
+      setError('Failed to fetch all reservations')
+    }
+  }
+
   // Fetch available tables from API
   const fetchTables = async (guests = 1) => {
     try {
@@ -291,6 +314,15 @@ export default function ReservationsPage({ allowCreate = true }) {
           >
             Today
           </button>
+          <button
+            onClick={() => {
+              console.log('📅 Fetching all reservations from all dates');
+              fetchAllReservations();
+            }}
+            className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+          >
+            Show All Dates
+          </button>
         </div>
 
         {/* Reservation type filter buttons */}
@@ -345,7 +377,7 @@ export default function ReservationsPage({ allowCreate = true }) {
                 matchesType = r.reservationType === 'reservation' || r.reservationType === 'online';
               }
               
-              // Filter by date
+              // Filter by date (skip if dateFilter is empty)
               let matchesDate = true;
               if (dateFilter && r.reservationDate) {
                 const reservationDate = new Date(r.reservationDate).toISOString().split('T')[0];
