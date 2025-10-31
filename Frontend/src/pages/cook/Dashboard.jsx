@@ -55,9 +55,11 @@ const CountdownTimer = ({ estimatedCompletionTime, orderStatus }) => {
   const [isStopped, setIsStopped] = useState(false)
   
   useEffect(() => {
-    // Stop timer if order is READY or SERVED
+    // Stop timer if order is READY or SERVED and set to 00:00
     if (orderStatus === 'READY' || orderStatus === 'SERVED') {
       setIsStopped(true)
+      setRemaining(0)
+      setIsOvertime(false)
       return
     }
     
@@ -86,21 +88,16 @@ const CountdownTimer = ({ estimatedCompletionTime, orderStatus }) => {
   const minutes = Math.floor(remaining / 60)
   const seconds = remaining % 60
   
-  if (isStopped) {
-    return (
-      <span className="font-mono text-sm font-bold text-green-600">
-        COMPLETED
-      </span>
-    )
-  }
-  
   return (
     <span className={`font-mono text-sm font-bold ${
-      isOvertime ? 'text-red-600' : remaining < 60 ? 'text-orange-600' : 'text-blue-600'
+      isStopped ? 'text-green-600' :
+      isOvertime ? 'text-red-600' : 
+      remaining < 60 ? 'text-orange-600' : 
+      'text-blue-600'
     }`}>
-      {isOvertime && '+'}
+      {!isStopped && isOvertime && '+'}
       {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-      {isOvertime && ' OVERTIME'}
+      {!isStopped && isOvertime && ' OVERTIME'}
     </span>
   )
 }
@@ -271,25 +268,36 @@ export default function CookDashboard() {
   const [shortageModal, setShortageModal] = useState({ isOpen: false, orderInfo: null, item: null })
   
   // Fetch orders
-  const fetchOrders = async () => {
+  const fetchOrders = async (showLoading = false) => {
     try {
+      if (showLoading) {
+        setLoading(true)
+      }
       const response = await api.get('/orders/kitchen')
       if (response && response.success && response.data) {
+        const timestamp = new Date().toLocaleTimeString()
+        console.log(`👨‍🍳 Cook [${timestamp}]: Orders fetched:`, response.data.orders.length, 'orders')
         setOrders(response.data.orders || [])
         setStats(response.data.stats || { pending: 0, preparing: 0, ready: 0, totalActive: 0 })
+        setError(null) // Clear any previous errors
       }
     } catch (err) {
       console.error('Error fetching orders:', err)
       setError('Failed to load orders')
     } finally {
-      setLoading(false)
+      if (showLoading) {
+        setLoading(false)
+      }
     }
   }
   
   useEffect(() => {
-    fetchOrders()
-    // Auto-refresh every 3 seconds to show new orders without manual refresh
-    const interval = setInterval(fetchOrders, 3000)
+    // Initial fetch with loading indicator
+    fetchOrders(true)
+    
+    // Auto-refresh every 1.5 seconds to show new orders without manual refresh
+    const interval = setInterval(() => fetchOrders(false), 1500)
+    
     return () => clearInterval(interval)
   }, [])
   

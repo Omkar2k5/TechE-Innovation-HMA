@@ -9,6 +9,79 @@ const STATUS_OPTIONS = [
   { value: 'MAINTENANCE', label: 'Maintenance' }
 ]
 
+// Order Timer Component - Shows countdown for order preparation
+const OrderTimer = ({ order }) => {
+  const [timeLeft, setTimeLeft] = useState(0)
+  const [isOvertime, setIsOvertime] = useState(false)
+  
+  // Check if all items are ready
+  const allItemsReady = order.orderedItems && order.orderedItems.length > 0 
+    ? order.orderedItems.every(item => item.status === 'READY' || item.status === 'SERVED')
+    : false
+  
+  useEffect(() => {
+    // Only show timer if order is PREPARING (cooking started)
+    if (order.orderStatus !== 'PREPARING') {
+      return
+    }
+    
+    const updateTimer = () => {
+      const now = Date.now()
+      const completionTime = new Date(order.estimatedCompletionTime).getTime()
+      const diff = Math.floor((completionTime - now) / 1000)
+      
+      if (diff < 0) {
+        setIsOvertime(true)
+        setTimeLeft(Math.abs(diff))
+      } else {
+        setIsOvertime(false)
+        setTimeLeft(diff)
+      }
+    }
+    
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+    
+    return () => clearInterval(interval)
+  }, [order.estimatedCompletionTime, order.orderStatus])
+  
+  const minutes = Math.floor(timeLeft / 60)
+  const seconds = timeLeft % 60
+  
+  // Don't show timer if order is not PREPARING
+  if (order.orderStatus === 'PENDING') {
+    return (
+      <div className="text-xs text-amber-600 font-medium mt-1">
+        ⏳ Waiting to cook
+      </div>
+    )
+  }
+  
+  // Show ready ONLY if order status is READY OR all items are actually ready
+  if (order.orderStatus === 'READY' || allItemsReady) {
+    return (
+      <div className="text-xs text-green-600 font-bold mt-1">
+        ✓ Ready to serve
+      </div>
+    )
+  }
+  
+  if (order.orderStatus === 'SERVED') {
+    return null
+  }
+  
+  // Show timer for PREPARING status (with some items still cooking)
+  return (
+    <div className={`text-xs font-mono font-bold mt-1 ${
+      isOvertime ? 'text-red-600' : timeLeft < 60 ? 'text-orange-600' : 'text-blue-600'
+    }`}>
+      {isOvertime && '+ '}
+      {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
+      {isOvertime && ' LATE'}
+    </div>
+  )
+}
+
 // ---------------- CARD COMPONENT ----------------
 const Card = ({ title, value, className }) => (
   <div className={`flex-1 min-w-[180px] rounded-xl border p-4 ${className || ''}`}>
@@ -82,7 +155,7 @@ const GuestModal = ({ table, onClose, onSave }) => {
 };
 
 // ---------------- TABLE CARD ----------------
-const TableCard = ({ table, onClick, onRightClick, onTakeOrder, isUpdating }) => {
+const TableCard = ({ table, onClick, onRightClick, onTakeOrder, isUpdating, order }) => {
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case 'vacant': return 'bg-green-100 border-green-300 hover:bg-green-200';
@@ -112,7 +185,7 @@ const TableCard = ({ table, onClick, onRightClick, onTakeOrder, isUpdating }) =>
           if (onRightClick) onRightClick(table)
         }}
         disabled={isUpdating}
-        className={`w-full h-28 rounded-lg p-3 border-2 text-left transition-colors cursor-pointer relative flex flex-col justify-between ${
+        className={`w-full h-32 rounded-lg p-3 border-2 text-left transition-colors cursor-pointer relative flex flex-col justify-between ${
           isUpdating 
             ? 'opacity-75 cursor-not-allowed bg-gray-100 border-gray-300' 
             : getStatusColor(table.status)
@@ -129,13 +202,17 @@ const TableCard = ({ table, onClick, onRightClick, onTakeOrder, isUpdating }) =>
           <div className="text-sm text-gray-600 leading-tight mt-1">{table.capacity} seats</div>
         </div>
         
-        <div className="flex flex-col h-10 justify-end">
+        <div className="flex flex-col justify-end">
           <div className={`text-xs font-medium uppercase leading-tight mb-1 ${getStatusTextColor(table.status)}`}>
             {isUpdating ? 'Updating...' : table.status}
           </div>
-          <div className="text-xs text-slate-700 leading-tight truncate h-4 flex items-center">
+          <div className="text-xs text-slate-700 leading-tight truncate flex items-center">
             {table.guest ? `${table.guest.name} (${table.guest.groupSize})` : ''}
           </div>
+          {/* Show order timer if there's an active order */}
+          {order && order.orderStatus !== 'SERVED' && order.orderStatus !== 'COMPLETED' && (
+            <OrderTimer key={`${order.orderId}-${order.orderStatus}`} order={order} />
+          )}
         </div>
       </button>
       
@@ -185,15 +262,35 @@ export default function ReceptionistDashboard() {
   const [loadingMenu, setLoadingMenu] = useState(false)
   const [orderItems, setOrderItems] = useState([])
   const [submittingOrder, setSubmittingOrder] = useState(false)
+  const [orders, setOrders] = useState([])
   const [addFormData, setAddFormData] = useState({
     tableId: '',
     capacity: 2,
     status: 'VACANT'
   })
 
+  // Fetch orders for tracking
+  const fetchOrders = async () => {
+    try {
+      const response = await api.get('/orders/kitchen')
+      if (response && response.success && response.data) {
+        const timestamp = new Date().toLocaleTimeString()
+        console.log(`📋 Receptionist [${timestamp}]: Orders fetched:`, response.data.orders.length, 'orders')
+        setOrders(response.data.orders || [])
+      }
+    } catch (err) {
+      console.error('Error fetching orders:', err)
+    }
+  }
+
   // Fetch tables on component mount
   useEffect(() => {
     fetchTables()
+    fetchOrders()
+    
+    // Auto-refresh orders every 1.5 seconds for faster updates
+    const interval = setInterval(fetchOrders, 1500)
+    return () => clearInterval(interval)
   }, [])
 
   const fetchTables = async () => {
@@ -461,16 +558,17 @@ export default function ReceptionistDashboard() {
         notes: ''
       })
 
-      if (response && (response.order || response._id)) {
-        // Success
+      if (response && response.success) {
+        // Success - order created or appended
         setShowOrderModal(false)
         setOrderTable(null)
         setOrderItems([])
         setMenuItems([])
         
-        // Show success notification (you can enhance this)
-        alert('Order submitted successfully!')
+        // Refresh orders to show timer immediately
+        await fetchOrders()
       } else {
+        // Only show error if response was not successful
         setError(response?.message || response?.error || 'Failed to submit order')
       }
     } catch (err) {
@@ -604,16 +702,26 @@ export default function ReceptionistDashboard() {
 
       {/* TABLE GRID */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 gap-y-6">
-        {filteredTables.map(table => (
-          <TableCard 
-            key={table.tableId} 
-            table={table} 
-            onClick={() => handleTableClick(table)}
-            onRightClick={handleTableRightClick}
-            onTakeOrder={handleTakeOrder}
-            isUpdating={updatingTable === table.tableId}
-          />
-        ))}
+        {filteredTables.map(table => {
+          // Find active order for this table
+          const tableOrder = orders.find(order => 
+            order.tableId === table.tableId && 
+            order.orderStatus !== 'SERVED' && 
+            order.orderStatus !== 'COMPLETED'
+          )
+          
+          return (
+            <TableCard 
+              key={table.tableId} 
+              table={table} 
+              onClick={() => handleTableClick(table)}
+              onRightClick={handleTableRightClick}
+              onTakeOrder={handleTakeOrder}
+              isUpdating={updatingTable === table.tableId}
+              order={tableOrder}
+            />
+          )
+        })}
       </div>
 
       {/* Empty State */}

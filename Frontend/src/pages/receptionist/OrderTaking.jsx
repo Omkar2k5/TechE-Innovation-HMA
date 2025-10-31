@@ -113,16 +113,7 @@ export default function OrderTaking() {
       const response = await api.post("/orders", orderData)
       console.log(" Order response:", response)
 
-      if (response.inventoryDeductions && response.inventoryDeductions.length > 0) {
-        const deductionSummary = response.inventoryDeductions
-          .map((d) => `${d.ingredient}: ${d.previousStock} → ${d.newStock} ${d.unit || ""}`)
-          .join("\n")
-
-        alert(`Order placed successfully for Table ${tableNumber}!\n\nInventory Updated:\n${deductionSummary}`)
-      } else {
-        alert(`Order placed successfully for Table ${tableNumber}!`)
-      }
-
+      // Success - order placed
       setCart([])
       setTableNumber("")
     } catch (err) {

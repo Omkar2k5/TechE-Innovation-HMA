@@ -679,19 +679,6 @@ export default function BillingPage() {
             </div>
           )}
         </div>
-        {process.env.NODE_ENV === 'development' && (
-          <button
-            onClick={async () => {
-              console.log('🧪 Testing orders API directly...');
-              const testResult = await api.get('/orders');
-              console.log('🧪 Test result:', testResult);
-              alert('Check console for test results');
-            }}
-            className="px-3 py-2 bg-gray-600 text-white rounded-md text-sm"
-          >
-            Test API
-          </button>
-        )}
       </div>
 
       {/* Error Display */}
