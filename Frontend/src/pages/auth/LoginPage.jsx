@@ -21,7 +21,49 @@ const LoginPage = () => {
     clearError()
 
     try {
-      await signIn({ hotelId, email, password, role })
+      const response = await signIn({ hotelId, email, password, role })
+      const features = response.user?.features || {}
+      
+      // For cook role - check if they have any features
+      if (role === 'cook') {
+        if (!features.dashboard) {
+          setLoginError('Dashboard feature is not available for you. Please contact your administrator.')
+          setLoading(false)
+          return
+        }
+        navigate('/cook')
+        return
+      }
+      
+      // For receptionist - redirect to first available feature
+      if (role === 'receptionist') {
+        if (features.dashboard !== false) {
+          navigate('/receptionist')
+        } else if (features.reservations) {
+          navigate('/receptionist/reservations')
+        } else if (features.ordersBilling) {
+          navigate('/receptionist/billing')
+        } else if (features.reports) {
+          navigate('/receptionist/reports')
+        } else if (features.addEmployee) {
+          navigate('/receptionist/employees')
+        } else if (features.menuManagement) {
+          navigate('/receptionist/menu')
+        } else {
+          setLoginError('No features are available for your account. Please contact your administrator.')
+          setLoading(false)
+          return
+        }
+        return
+      }
+      
+      // For owner - redirect to first available feature
+      if (role === 'owner') {
+        navigate('/owner')
+        return
+      }
+      
+      // Default fallback
       navigate(`/${role}`)
     } catch (err) {
       setLoginError(err.message)

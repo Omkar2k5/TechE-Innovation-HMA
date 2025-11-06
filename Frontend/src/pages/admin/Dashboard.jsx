@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import InventoryDashboard from "./inventory/InventoryDashboard.jsx"
 import DashboardOverview from "./DashboardOverview.jsx"
 import EmployeeManagement from "./EmployeeManagement.jsx"
@@ -84,15 +84,41 @@ export default function AdminDashboard() {
     if (features.staffManagement) return "staff-management"
     if (features.performanceAnalysis) return "performance-analysis"
     if (features.businessEvaluation) return "business-evaluation"
-    return "dashboard"
+    return null
   }
   
   const [activeSection, setActiveSection] = useState(getDefaultSection())
+  
+  // Redirect to first available section if current section is not accessible
+  useEffect(() => {
+    const defaultSection = getDefaultSection()
+    if (!defaultSection) {
+      // No features available
+      return
+    }
+    
+    // Check if current section is accessible
+    const sectionFeatureMap = {
+      "dashboard": features.dashboard,
+      "inventory-dashboard": features.inventory,
+      "live-cctv": features.liveCCTV,
+      "staff-management": features.staffManagement,
+      "performance-analysis": features.performanceAnalysis,
+      "business-evaluation": features.businessEvaluation,
+    }
+    
+    if (!sectionFeatureMap[activeSection]) {
+      setActiveSection(defaultSection)
+    }
+  }, [features])
   
   const onLogout = () => {
     signOut()
     navigate("/")
   }
+  
+  // Check if user has no features at all
+  const hasNoFeatures = !getDefaultSection()
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -103,24 +129,20 @@ export default function AdminDashboard() {
         features={features}
       />
       <main className="flex-1 p-6">
-        {activeSection === "dashboard" && features.dashboard && <DashboardOverview />}
-        {activeSection === "inventory-dashboard" && features.inventory && <InventoryDashboard />}
-        {activeSection === "live-cctv" && features.liveCCTV && <LiveCCTV />}
-        {activeSection === "staff-management" && features.staffManagement && <EmployeeManagement />}
-        {activeSection === "performance-analysis" && features.performanceAnalysis && <PerformanceAnalysis />}
-        {activeSection === "business-evaluation" && features.businessEvaluation && <BusinessEvaluation />}
-        
-        {/* Show access denied message if trying to access restricted feature */}
-        {((activeSection === "dashboard" && !features.dashboard) ||
-          (activeSection === "inventory-dashboard" && !features.inventory) ||
-          (activeSection === "live-cctv" && !features.liveCCTV) ||
-          (activeSection === "staff-management" && !features.staffManagement) ||
-          (activeSection === "performance-analysis" && !features.performanceAnalysis) ||
-          (activeSection === "business-evaluation" && !features.businessEvaluation)) && (
+        {hasNoFeatures ? (
           <div className="p-6">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-            <p className="text-gray-600">You don't have permission to access this feature.</p>
+            <h1 className="text-2xl font-bold text-red-600 mb-4">No Features Available</h1>
+            <p className="text-gray-600">No features are available for your account. Please contact your administrator.</p>
           </div>
+        ) : (
+          <>
+            {activeSection === "dashboard" && features.dashboard && <DashboardOverview />}
+            {activeSection === "inventory-dashboard" && features.inventory && <InventoryDashboard />}
+            {activeSection === "live-cctv" && features.liveCCTV && <LiveCCTV />}
+            {activeSection === "staff-management" && features.staffManagement && <EmployeeManagement />}
+            {activeSection === "performance-analysis" && features.performanceAnalysis && <PerformanceAnalysis />}
+            {activeSection === "business-evaluation" && features.businessEvaluation && <BusinessEvaluation />}
+          </>
         )}
       </main>
     </div>

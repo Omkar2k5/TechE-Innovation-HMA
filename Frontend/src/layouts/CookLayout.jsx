@@ -7,6 +7,7 @@ export default function CookLayout() {
   const { signOut, user } = useAuth()
   const navigate = useNavigate()
   const features = user?.features || {}
+  const hasDashboard = features.dashboard !== false
 
   const logout = () => {
     signOut()
@@ -22,7 +23,7 @@ export default function CookLayout() {
     <div className="min-h-screen bg-slate-100 flex">
       <aside className="w-[var(--sidebar-width)] bg-slate-900 p-4 space-y-2">
         <div className="text-lg font-semibold text-white mb-4">Kitchen</div>
-        {features.dashboard !== false && (
+        {hasDashboard && (
           <NavLink to="/cook" end className={linkClass}>
             Dashboard
           </NavLink>
@@ -35,7 +36,14 @@ export default function CookLayout() {
         </button>
       </aside>
       <main className="flex-1 p-6">
-        <Outlet />
+        {!hasDashboard ? (
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">No Access</h1>
+            <p className="text-gray-600">Dashboard feature is not available for your account. Please contact your administrator.</p>
+          </div>
+        ) : (
+          <Outlet />
+        )}
       </main>
     </div>
   )
