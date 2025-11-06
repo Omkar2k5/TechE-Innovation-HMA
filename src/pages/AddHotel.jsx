@@ -53,9 +53,7 @@ export default function AddHotel() {
       dashboard: false, 
       reservations: false, 
       ordersBilling: false, 
-      reports: false, 
-      addEmployee: false, 
-      menuManagement: false 
+      reports: false
     },
     cook: { dashboard: false },
     manager: { feature1: false, feature2: false, feature3: false },
@@ -288,8 +286,6 @@ export default function AddHotel() {
                 <Toggle label="Reservations" checked={roleFeatures.receptionalist.reservations} onChange={(v) => setRoleFeature("receptionalist", "reservations", v)} />
                 <Toggle label="Orders & Billing" checked={roleFeatures.receptionalist.ordersBilling} onChange={(v) => setRoleFeature("receptionalist", "ordersBilling", v)} />
                 <Toggle label="Reports" checked={roleFeatures.receptionalist.reports} onChange={(v) => setRoleFeature("receptionalist", "reports", v)} />
-                <Toggle label="Add Employee" checked={roleFeatures.receptionalist.addEmployee} onChange={(v) => setRoleFeature("receptionalist", "addEmployee", v)} />
-                <Toggle label="Menu Management" checked={roleFeatures.receptionalist.menuManagement} onChange={(v) => setRoleFeature("receptionalist", "menuManagement", v)} />
               </div>
             </SectionPanel>
 
