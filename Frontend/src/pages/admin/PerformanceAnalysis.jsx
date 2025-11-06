@@ -129,6 +129,8 @@ export default function PerformanceAnalysis() {
           return billDate >= weekAgo
         } else if (dateRange === 'month') {
           return billDate.getMonth() === now.getMonth() && billDate.getFullYear() === now.getFullYear()
+        } else if (dateRange === 'all') {
+          return true // Show all data
         }
         return true
       })
@@ -238,7 +240,7 @@ export default function PerformanceAnalysis() {
         </div>
         
         {/* Date Range Selector */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setDateRange('today')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -268,6 +270,16 @@ export default function PerformanceAnalysis() {
             }`}
           >
             This Month
+          </button>
+          <button
+            onClick={() => setDateRange('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              dateRange === 'all' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            All Data
           </button>
           <button
             onClick={() => fetchPerformanceData()}
