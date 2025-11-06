@@ -39,33 +39,33 @@ router.post('/add', protect, authorize('owner'), async (req, res) => {
       });
     }
 
-    // Determine field names based on role
+    // Determine field names based on role (using underscore notation to match database)
     let emailFieldName, passwordFieldName, nameFieldName, phoneFieldName;
     
     switch (role.toLowerCase()) {
       case 'manager':
-        emailFieldName = 'Manager Email';
-        passwordFieldName = 'Manager Password';
-        nameFieldName = 'Manager Name';
-        phoneFieldName = 'Manager Phone';
+        emailFieldName = 'Manager_Email';
+        passwordFieldName = 'Manager_Password';
+        nameFieldName = 'Manager_Name';
+        phoneFieldName = 'Manager_Phone';
         break;
       case 'receptionalist':
-        emailFieldName = 'Receptionalist Email';
-        passwordFieldName = 'Receptionalist Password';
-        nameFieldName = 'Receptionalist Name';
-        phoneFieldName = 'Receptionalist Phone';
+        emailFieldName = 'Receptionalist_Email';
+        passwordFieldName = 'Receptionalist_Password';
+        nameFieldName = 'Receptionalist_Name';
+        phoneFieldName = 'Receptionalist_Phone';
         break;
       case 'cook':
-        emailFieldName = 'Cook Email';
-        passwordFieldName = 'Cook Password';
-        nameFieldName = 'Cook Name';
-        phoneFieldName = 'Cook Phone';
+        emailFieldName = 'Cook_Email';
+        passwordFieldName = 'Cook_Password';
+        nameFieldName = 'Cook_Name';
+        phoneFieldName = 'Cook_Phone';
         break;
       case 'waiter':
-        emailFieldName = 'Waiter Email';
-        passwordFieldName = 'Waiter Password'; // Not used, but defined for consistency
-        nameFieldName = 'Waiter Name';
-        phoneFieldName = 'Waiter Phone';
+        emailFieldName = 'Waiter_Email';
+        passwordFieldName = 'Waiter_Password'; // Not used, but defined for consistency
+        nameFieldName = 'Waiter_Name';
+        phoneFieldName = 'Waiter_Phone';
         break;
     }
 
@@ -171,18 +171,21 @@ router.get('/', protect, authorize('owner'), async (req, res) => {
           features: role.features
         };
 
-        // Check for employee information based on role
+        // Check for employee information based on role (using underscore notation)
         const roleType = role.role.toLowerCase();
         // Capitalize first letter for field names
         const roleTypeCap = roleType.charAt(0).toUpperCase() + roleType.slice(1);
-        const emailField = `${roleTypeCap} Email`;
-        const nameField = `${roleTypeCap} Name`;
-        const phoneField = `${roleTypeCap} Phone`;
+        const emailField = `${roleTypeCap}_Email`;
+        const nameField = `${roleTypeCap}_Name`;
+        const phoneField = `${roleTypeCap}_Phone`;
 
-        if (role[emailField]) {
-          employee.email = role[emailField];
-          employee.name = role[nameField] || 'Not specified';
-          employee.phone = role[phoneField] || 'Not specified';
+        // Convert role document to plain object to access fields
+        const roleData = role.toObject ? role.toObject() : role;
+
+        if (roleData[emailField]) {
+          employee.email = roleData[emailField];
+          employee.name = roleData[nameField] || 'Not specified';
+          employee.phone = roleData[phoneField] || 'Not specified';
           employee.hasCredentials = true;
         } else {
           employee.hasCredentials = false;
@@ -249,10 +252,10 @@ router.put('/update', protect, authorize('owner'), async (req, res) => {
     // Get the role type from the found role entry
     const roleType = hotel.roles[roleIndex].role.toLowerCase();
     const roleTypeCap = roleType.charAt(0).toUpperCase() + roleType.slice(1);
-    const emailField = `${roleTypeCap} Email`;
-    const nameField = `${roleTypeCap} Name`;
-    const phoneField = `${roleTypeCap} Phone`;
-    const passwordField = `${roleTypeCap} Password`;
+    const emailField = `${roleTypeCap}_Email`;
+    const nameField = `${roleTypeCap}_Name`;
+    const phoneField = `${roleTypeCap}_Phone`;
+    const passwordField = `${roleTypeCap}_Password`;
     
     // Don't allow password reset for waiters
     if (resetPassword && roleType === 'waiter') {
