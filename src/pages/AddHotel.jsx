@@ -42,7 +42,14 @@ export default function AddHotel() {
   // Role-based features (Owner, Receptionalist, Cook, Manager)
   const [roleFeatures, setRoleFeatures] = useState({
     owner: { feature1: false, feature2: false, feature3: false },
-    receptionalist: { feature1: false, feature2: false, feature3: false },
+    receptionalist: { 
+      dashboard: false, 
+      reservations: false, 
+      ordersBilling: false, 
+      reports: false, 
+      addEmployee: false, 
+      menuManagement: false 
+    },
     cook: { feature1: false, feature2: false, feature3: false },
     manager: { feature1: false, feature2: false, feature3: false },
   });
@@ -267,9 +274,12 @@ export default function AddHotel() {
             <SectionPanel>
               <h3 className="text-sm font-medium text-gray-700 mb-3">Receptionalist</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Toggle label="Feature 1" checked={roleFeatures.receptionalist.feature1} onChange={(v) => setRoleFeature("receptionalist", "feature1", v)} />
-                <Toggle label="Feature 2" checked={roleFeatures.receptionalist.feature2} onChange={(v) => setRoleFeature("receptionalist", "feature2", v)} />
-                <Toggle label="Feature 3" checked={roleFeatures.receptionalist.feature3} onChange={(v) => setRoleFeature("receptionalist", "feature3", v)} />
+                <Toggle label="Dashboard" checked={roleFeatures.receptionalist.dashboard} onChange={(v) => setRoleFeature("receptionalist", "dashboard", v)} />
+                <Toggle label="Reservations" checked={roleFeatures.receptionalist.reservations} onChange={(v) => setRoleFeature("receptionalist", "reservations", v)} />
+                <Toggle label="Orders & Billing" checked={roleFeatures.receptionalist.ordersBilling} onChange={(v) => setRoleFeature("receptionalist", "ordersBilling", v)} />
+                <Toggle label="Reports" checked={roleFeatures.receptionalist.reports} onChange={(v) => setRoleFeature("receptionalist", "reports", v)} />
+                <Toggle label="Add Employee" checked={roleFeatures.receptionalist.addEmployee} onChange={(v) => setRoleFeature("receptionalist", "addEmployee", v)} />
+                <Toggle label="Menu Management" checked={roleFeatures.receptionalist.menuManagement} onChange={(v) => setRoleFeature("receptionalist", "menuManagement", v)} />
               </div>
             </SectionPanel>
 
