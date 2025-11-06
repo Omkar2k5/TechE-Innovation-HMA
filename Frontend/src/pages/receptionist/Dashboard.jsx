@@ -9,7 +9,7 @@ const STATUS_OPTIONS = [
   { value: 'MAINTENANCE', label: 'Maintenance' }
 ]
 
-// Order Timer Component - Shows countdown for order preparation
+// Order Timer Component - Shows countdown for complete order (all items)
 const OrderTimer = ({ order }) => {
   const [timeLeft, setTimeLeft] = useState(0)
   const [isOvertime, setIsOvertime] = useState(false)
@@ -19,6 +19,44 @@ const OrderTimer = ({ order }) => {
     ? order.orderedItems.every(item => item.status === 'READY' || item.status === 'SERVED')
     : false
   
+  // Calculate total remaining time for the entire order
+  const calculateTotalTimeLeft = () => {
+    if (!order.orderedItems || order.orderedItems.length === 0) {
+      return 0
+    }
+    
+    const now = Date.now()
+    let maxTimeLeft = 0
+    
+    // Find the item that will take the longest to complete
+    order.orderedItems.forEach(item => {
+      if (item.status === 'READY' || item.status === 'SERVED') {
+        // Item is done, doesn't contribute to time left
+        return
+      }
+      
+      if (item.status === 'PREPARING' && item.startedAt) {
+        // Item is cooking - calculate time left based on prep time
+        const startTime = new Date(item.startedAt).getTime()
+        const prepTimeMs = (item.preparationTimeMinutes || 0) * 60 * 1000
+        const expectedDoneTime = startTime + prepTimeMs
+        const timeLeftForItem = Math.floor((expectedDoneTime - now) / 1000)
+        
+        if (timeLeftForItem > maxTimeLeft) {
+          maxTimeLeft = timeLeftForItem
+        }
+      } else if (item.status === 'PENDING') {
+        // Item hasn't started yet - add full prep time
+        const prepTimeSeconds = (item.preparationTimeMinutes || 0) * 60
+        if (prepTimeSeconds > maxTimeLeft) {
+          maxTimeLeft = prepTimeSeconds
+        }
+      }
+    })
+    
+    return maxTimeLeft
+  }
+  
   useEffect(() => {
     // Only show timer if order is PREPARING (cooking started)
     if (order.orderStatus !== 'PREPARING') {
@@ -26,16 +64,14 @@ const OrderTimer = ({ order }) => {
     }
     
     const updateTimer = () => {
-      const now = Date.now()
-      const completionTime = new Date(order.estimatedCompletionTime).getTime()
-      const diff = Math.floor((completionTime - now) / 1000)
+      const totalTime = calculateTotalTimeLeft()
       
-      if (diff < 0) {
+      if (totalTime < 0) {
         setIsOvertime(true)
-        setTimeLeft(Math.abs(diff))
+        setTimeLeft(Math.abs(totalTime))
       } else {
         setIsOvertime(false)
-        setTimeLeft(diff)
+        setTimeLeft(totalTime)
       }
     }
     
@@ -43,7 +79,7 @@ const OrderTimer = ({ order }) => {
     const interval = setInterval(updateTimer, 1000)
     
     return () => clearInterval(interval)
-  }, [order.estimatedCompletionTime, order.orderStatus])
+  }, [order.orderedItems, order.orderStatus])
   
   const minutes = Math.floor(timeLeft / 60)
   const seconds = timeLeft % 60

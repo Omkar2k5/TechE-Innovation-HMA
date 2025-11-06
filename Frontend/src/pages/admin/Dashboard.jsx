@@ -3,9 +3,10 @@
 import React, { useState } from "react"
 import InventoryDashboard from "./inventory/InventoryDashboard.jsx"
 import DashboardOverview from "./DashboardOverview.jsx"
-import InventoryAnalytics from "./inventory/InventoryAnalytics.jsx"
-import TablesManagement from "./TablesManagement.jsx"
 import EmployeeManagement from "./EmployeeManagement.jsx"
+import LiveCCTV from "./LiveCCTV.jsx"
+import PerformanceAnalysis from "./PerformanceAnalysis.jsx"
+import BusinessEvaluation from "./BusinessEvaluation.jsx"
 import { useAuth } from "../../auth/AuthContext.jsx"
 import { useNavigate } from "react-router-dom"
 
@@ -14,10 +15,10 @@ const Sidebar = ({ activeSection, setActiveSection, onLogout }) => {
   const items = [
     { id: "dashboard", label: "Dashboard" },
     { id: "inventory-dashboard", label: "Inventory" },
-    { id: "tables", label: "Table Management" },
-    { id: "orders", label: "Orders & Billing" },
-    { id: "reports", label: "Reports" },
-    { id: "employee-management", label: "Employee Management" },
+    { id: "live-cctv", label: "Live CCTV" },
+    { id: "staff-management", label: "Staff Management" },
+    { id: "performance-analysis", label: "Performance Analysis" },
+    { id: "business-evaluation", label: "Business Evaluation" },
   ]
 
   return (
@@ -82,15 +83,10 @@ export default function AdminDashboard() {
       <main className="flex-1 p-6">
         {activeSection === "dashboard" && <DashboardOverview />}
         {activeSection === "inventory-dashboard" && <InventoryDashboard />}
-        {activeSection === "tables" && <TablesManagement />}
-        {activeSection === "orders" && (
-          <div className="p-6">
-            <h1 className="text-xl font-semibold">Orders & Billing</h1>
-            <p className="text-sm text-slate-600">Coming soon.</p>
-          </div>
-        )}
-        {activeSection === "reports" && <InventoryAnalytics />}
-        {activeSection === "employee-management" && <EmployeeManagement />}
+        {activeSection === "live-cctv" && <LiveCCTV />}
+        {activeSection === "staff-management" && <EmployeeManagement />}
+        {activeSection === "performance-analysis" && <PerformanceAnalysis />}
+        {activeSection === "business-evaluation" && <BusinessEvaluation />}
       </main>
     </div>
   )
