@@ -41,7 +41,14 @@ export default function AddHotel() {
 
   // Role-based features (Owner, Receptionalist, Cook, Manager)
   const [roleFeatures, setRoleFeatures] = useState({
-    owner: { feature1: false, feature2: false, feature3: false },
+    owner: { 
+      dashboard: false, 
+      inventory: false, 
+      liveCCTV: false, 
+      staffManagement: false, 
+      performanceAnalysis: false, 
+      businessEvaluation: false 
+    },
     receptionalist: { 
       dashboard: false, 
       reservations: false, 
@@ -50,7 +57,7 @@ export default function AddHotel() {
       addEmployee: false, 
       menuManagement: false 
     },
-    cook: { feature1: false, feature2: false, feature3: false },
+    cook: { dashboard: false },
     manager: { feature1: false, feature2: false, feature3: false },
   });
 
@@ -265,9 +272,12 @@ export default function AddHotel() {
             <SectionPanel>
               <h3 className="text-sm font-medium text-gray-700 mb-3">Owner</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Toggle label="Feature 1" checked={roleFeatures.owner.feature1} onChange={(v) => setRoleFeature("owner", "feature1", v)} />
-                <Toggle label="Feature 2" checked={roleFeatures.owner.feature2} onChange={(v) => setRoleFeature("owner", "feature2", v)} />
-                <Toggle label="Feature 3" checked={roleFeatures.owner.feature3} onChange={(v) => setRoleFeature("owner", "feature3", v)} />
+                <Toggle label="Dashboard" checked={roleFeatures.owner.dashboard} onChange={(v) => setRoleFeature("owner", "dashboard", v)} />
+                <Toggle label="Inventory" checked={roleFeatures.owner.inventory} onChange={(v) => setRoleFeature("owner", "inventory", v)} />
+                <Toggle label="Live CCTV" checked={roleFeatures.owner.liveCCTV} onChange={(v) => setRoleFeature("owner", "liveCCTV", v)} />
+                <Toggle label="Staff Management" checked={roleFeatures.owner.staffManagement} onChange={(v) => setRoleFeature("owner", "staffManagement", v)} />
+                <Toggle label="Performance Analysis" checked={roleFeatures.owner.performanceAnalysis} onChange={(v) => setRoleFeature("owner", "performanceAnalysis", v)} />
+                <Toggle label="Business Evaluation" checked={roleFeatures.owner.businessEvaluation} onChange={(v) => setRoleFeature("owner", "businessEvaluation", v)} />
               </div>
             </SectionPanel>
 
@@ -286,9 +296,7 @@ export default function AddHotel() {
             <SectionPanel>
               <h3 className="text-sm font-medium text-gray-700 mb-3">Cook</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Toggle label="Feature 1" checked={roleFeatures.cook.feature1} onChange={(v) => setRoleFeature("cook", "feature1", v)} />
-                <Toggle label="Feature 2" checked={roleFeatures.cook.feature2} onChange={(v) => setRoleFeature("cook", "feature2", v)} />
-                <Toggle label="Feature 3" checked={roleFeatures.cook.feature3} onChange={(v) => setRoleFeature("cook", "feature3", v)} />
+                <Toggle label="Dashboard" checked={roleFeatures.cook.dashboard} onChange={(v) => setRoleFeature("cook", "dashboard", v)} />
               </div>
             </SectionPanel>
 
