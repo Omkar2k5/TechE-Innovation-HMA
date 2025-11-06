@@ -45,10 +45,6 @@ const LoginPage = () => {
           navigate('/receptionist/billing')
         } else if (features.reports) {
           navigate('/receptionist/reports')
-        } else if (features.addEmployee) {
-          navigate('/receptionist/employees')
-        } else if (features.menuManagement) {
-          navigate('/receptionist/menu')
         } else {
           setLoginError('No features are available for your account. Please contact your administrator.')
           setLoading(false)

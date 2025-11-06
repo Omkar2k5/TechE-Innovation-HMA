@@ -37,10 +37,6 @@ export default function ReceptionistLayout() {
         navigate('/receptionist/billing', { replace: true })
       } else if (features.reports) {
         navigate('/receptionist/reports', { replace: true })
-      } else if (features.addEmployee) {
-        navigate('/receptionist/employees', { replace: true })
-      } else if (features.menuManagement) {
-        navigate('/receptionist/menu', { replace: true })
       }
     }
   }, [location.pathname, features, navigate])
