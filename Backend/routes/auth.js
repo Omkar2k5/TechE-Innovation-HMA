@@ -54,7 +54,10 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    console.log('✅ Role found:', foundRole.role, 'with roleId:', foundRole.roleId);
+    // Convert Mongoose subdocument to plain object to access fields properly
+    const roleData = foundRole.toObject ? foundRole.toObject() : foundRole;
+    
+    console.log('✅ Role found:', roleData.role, 'with roleId:', roleData.roleId);
 
     // Determine email/password field names based on role
     let roleEmailKey = "";
@@ -62,21 +65,21 @@ router.post('/login', async (req, res) => {
 
     switch (role.toLowerCase()) {
       case "owner":
-        roleEmailKey = "Owner Email";
-        rolePasswordKey = "Owner Password";
+        roleEmailKey = "owner_Email";
+        rolePasswordKey = "owner_Password";
         break;
       case "manager":
-        roleEmailKey = "Manager Email";
-        rolePasswordKey = "Manager Password";
+        roleEmailKey = "Manager_Email";
+        rolePasswordKey = "Manager_Password";
         break;
       case "receptionalist":
       case "receptionist":
-        roleEmailKey = "Receptionalist Email";
-        rolePasswordKey = "Receptionalist Password";
+        roleEmailKey = "Receptionalist_Email";
+        rolePasswordKey = "Receptionalist_Password";
         break;
       case "cook":
-        roleEmailKey = "Cook Email";
-        rolePasswordKey = "Cook Password";
+        roleEmailKey = "Cook_Email";
+        rolePasswordKey = "Cook_Password";
         break;
       default:
         return res.status(400).json({
@@ -89,11 +92,11 @@ router.post('/login', async (req, res) => {
     console.log('🔑 Checking credentials for role:', role);
     console.log('📧 Looking for email field:', roleEmailKey);
     console.log('🔒 Looking for password field:', rolePasswordKey);
-    console.log('📊 Role data keys:', Object.keys(foundRole));
+    console.log('📊 Role data keys:', Object.keys(roleData));
     
-    if (!foundRole[roleEmailKey] || !foundRole[rolePasswordKey]) {
-      console.log('❌ Credentials not found. Email field value:', foundRole[roleEmailKey]);
-      console.log('❌ Password field value:', foundRole[rolePasswordKey] ? '[EXISTS]' : '[MISSING]');
+    if (!roleData[roleEmailKey] || !roleData[rolePasswordKey]) {
+      console.log('❌ Credentials not found. Email field value:', roleData[roleEmailKey]);
+      console.log('❌ Password field value:', roleData[rolePasswordKey] ? '[EXISTS]' : '[MISSING]');
       return res.status(401).json({
         success: false,
         message: `No credentials found for ${role} role. Please contact administrator.`,
@@ -101,14 +104,14 @@ router.post('/login', async (req, res) => {
     }
 
     console.log('✅ Credentials found. Validating...');
-    console.log('📧 Database email:', foundRole[roleEmailKey]);
+    console.log('📧 Database email:', roleData[roleEmailKey]);
     console.log('📧 Provided email:', email);
-    console.log('🔒 Password match:', foundRole[rolePasswordKey] === password);
+    console.log('🔒 Password match:', roleData[rolePasswordKey] === password);
 
     // Validate credentials
     if (
-      foundRole[roleEmailKey] === email &&
-      foundRole[rolePasswordKey] === password
+      roleData[roleEmailKey] === email &&
+      roleData[rolePasswordKey] === password
     ) {
       // Generate JWT token
       const token = jwt.sign(
@@ -133,12 +136,12 @@ router.post('/login', async (req, res) => {
         user: {
           role: role.toLowerCase(),
           email: email,
-          features: foundRole.features
+          features: roleData.features || {}
         },
         roleDetails: {
-          roleId: foundRole.roleId,
-          role: foundRole.role,
-          features: foundRole.features
+          roleId: roleData.roleId,
+          role: roleData.role,
+          features: roleData.features || {}
         }
       });
     } else {

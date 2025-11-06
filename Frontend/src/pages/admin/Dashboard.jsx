@@ -10,16 +10,19 @@ import BusinessEvaluation from "./BusinessEvaluation.jsx"
 import { useAuth } from "../../auth/AuthContext.jsx"
 import { useNavigate } from "react-router-dom"
 
-const Sidebar = ({ activeSection, setActiveSection, onLogout }) => {
+const Sidebar = ({ activeSection, setActiveSection, onLogout, features = {} }) => {
   const [expanded, setExpanded] = useState(null)
-  const items = [
-    { id: "dashboard", label: "Dashboard" },
-    { id: "inventory-dashboard", label: "Inventory" },
-    { id: "live-cctv", label: "Live CCTV" },
-    { id: "staff-management", label: "Staff Management" },
-    { id: "performance-analysis", label: "Performance Analysis" },
-    { id: "business-evaluation", label: "Business Evaluation" },
+  const allItems = [
+    { id: "dashboard", label: "Dashboard", feature: "dashboard" },
+    { id: "inventory-dashboard", label: "Inventory", feature: "inventory" },
+    { id: "live-cctv", label: "Live CCTV", feature: "liveCCTV" },
+    { id: "staff-management", label: "Staff Management", feature: "staffManagement" },
+    { id: "performance-analysis", label: "Performance Analysis", feature: "performanceAnalysis" },
+    { id: "business-evaluation", label: "Business Evaluation", feature: "businessEvaluation" },
   ]
+  
+  // Filter items based on features
+  const items = allItems.filter(item => features[item.feature] === true)
 
   return (
     <aside className="w-64 bg-gray-800 text-white min-h-screen">
@@ -69,9 +72,23 @@ const Sidebar = ({ activeSection, setActiveSection, onLogout }) => {
 
 
 export default function AdminDashboard() {
-  const [activeSection, setActiveSection] = useState("dashboard")
-  const { signOut } = useAuth()
+  const { signOut, user } = useAuth()
   const navigate = useNavigate()
+  const features = user?.features || {}
+  
+  // Find first available feature as default section
+  const getDefaultSection = () => {
+    if (features.dashboard) return "dashboard"
+    if (features.inventory) return "inventory-dashboard"
+    if (features.liveCCTV) return "live-cctv"
+    if (features.staffManagement) return "staff-management"
+    if (features.performanceAnalysis) return "performance-analysis"
+    if (features.businessEvaluation) return "business-evaluation"
+    return "dashboard"
+  }
+  
+  const [activeSection, setActiveSection] = useState(getDefaultSection())
+  
   const onLogout = () => {
     signOut()
     navigate("/")
@@ -79,14 +96,32 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} onLogout={onLogout} />
+      <Sidebar 
+        activeSection={activeSection} 
+        setActiveSection={setActiveSection} 
+        onLogout={onLogout}
+        features={features}
+      />
       <main className="flex-1 p-6">
-        {activeSection === "dashboard" && <DashboardOverview />}
-        {activeSection === "inventory-dashboard" && <InventoryDashboard />}
-        {activeSection === "live-cctv" && <LiveCCTV />}
-        {activeSection === "staff-management" && <EmployeeManagement />}
-        {activeSection === "performance-analysis" && <PerformanceAnalysis />}
-        {activeSection === "business-evaluation" && <BusinessEvaluation />}
+        {activeSection === "dashboard" && features.dashboard && <DashboardOverview />}
+        {activeSection === "inventory-dashboard" && features.inventory && <InventoryDashboard />}
+        {activeSection === "live-cctv" && features.liveCCTV && <LiveCCTV />}
+        {activeSection === "staff-management" && features.staffManagement && <EmployeeManagement />}
+        {activeSection === "performance-analysis" && features.performanceAnalysis && <PerformanceAnalysis />}
+        {activeSection === "business-evaluation" && features.businessEvaluation && <BusinessEvaluation />}
+        
+        {/* Show access denied message if trying to access restricted feature */}
+        {((activeSection === "dashboard" && !features.dashboard) ||
+          (activeSection === "inventory-dashboard" && !features.inventory) ||
+          (activeSection === "live-cctv" && !features.liveCCTV) ||
+          (activeSection === "staff-management" && !features.staffManagement) ||
+          (activeSection === "performance-analysis" && !features.performanceAnalysis) ||
+          (activeSection === "business-evaluation" && !features.businessEvaluation)) && (
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+            <p className="text-gray-600">You don't have permission to access this feature.</p>
+          </div>
+        )}
       </main>
     </div>
   )

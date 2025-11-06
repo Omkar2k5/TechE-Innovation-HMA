@@ -18,6 +18,7 @@ import MenuManagement from "./pages/receptionist/MenuManagement.jsx"
 import CookDashboard from "./pages/cook/Dashboard.jsx"
 import AdminDashboard from "./pages/admin/Dashboard.jsx"
 import { AuthProvider, RequireRole } from "./auth/AuthContext.jsx"
+import FeatureGuard from "./auth/FeatureGuard.jsx"
 import MenuApp from "./simple-menu/MenuApp.jsx"
 
 // Simple error boundary to catch and display runtime errors
@@ -61,18 +62,18 @@ function App() {
 
           <Route element={<RequireRole role="receptionist" />}>
             <Route path="/receptionist" element={<ReceptionistLayout />}>
-              <Route index element={<ReceptionistDashboard />} />
-              <Route path="reservations" element={<ReservationsPage />} />
-              <Route path="billing" element={<BillingPage />} />
-              <Route path="reports" element={<ReportsPage />} />
-              <Route path="employees" element={<ReceptionistEmployees />} />
-              <Route path="menu" element={<MenuManagement />} />
+              <Route index element={<FeatureGuard feature="dashboard"><ReceptionistDashboard /></FeatureGuard>} />
+              <Route path="reservations" element={<FeatureGuard feature="reservations"><ReservationsPage /></FeatureGuard>} />
+              <Route path="billing" element={<FeatureGuard feature="ordersBilling"><BillingPage /></FeatureGuard>} />
+              <Route path="reports" element={<FeatureGuard feature="reports"><ReportsPage /></FeatureGuard>} />
+              <Route path="employees" element={<FeatureGuard feature="addEmployee"><ReceptionistEmployees /></FeatureGuard>} />
+              <Route path="menu" element={<FeatureGuard feature="menuManagement"><MenuManagement /></FeatureGuard>} />
             </Route>
           </Route>
 
           <Route element={<RequireRole role="cook" />}>
             <Route path="/cook" element={<CookLayout />}>
-              <Route index element={<CookDashboard />} />
+              <Route index element={<FeatureGuard feature="dashboard"><CookDashboard /></FeatureGuard>} />
             </Route>
           </Route>
 

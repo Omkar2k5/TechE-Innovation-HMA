@@ -48,15 +48,14 @@ export const AuthProvider = ({ children }) => {
 
       // Store token and user data
       localStorage.setItem('authToken', response.token)
-      localStorage.setItem('userData', JSON.stringify({
+      const userData = {
         ...response.user,
-        hotel: response.hotel
-      }))
+        hotel: response.hotel,
+        features: response.user.features || {}
+      }
+      localStorage.setItem('userData', JSON.stringify(userData))
 
-      setUser({
-        ...response.user,
-        hotel: response.hotel
-      })
+      setUser(userData)
 
       return response
     } catch (err) {
