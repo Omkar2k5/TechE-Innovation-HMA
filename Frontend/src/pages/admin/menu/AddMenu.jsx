@@ -8,6 +8,10 @@ export default function AddMenu({
   allIngredients = [] 
 }) {
   const [name, setName] = useState('');
+  const [price, setPrice] = useState(0);
+  const [category, setCategory] = useState('main');
+  const [description, setDescription] = useState('');
+  const [preparationTime, setPreparationTime] = useState(15);
   const [ingredients, setIngredients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showIngredientDropdown, setShowIngredientDropdown] = useState(false);
@@ -15,15 +19,24 @@ export default function AddMenu({
   useEffect(() => {
     if (initialMenu) {
       setName(initialMenu.name || '');
+      setPrice(initialMenu.price || 0);
+      setCategory(initialMenu.category || 'main');
+      setDescription(initialMenu.description || '');
+      setPreparationTime(initialMenu.preparationTime || 15);
+      
       // normalize incoming ingredients: allow both string[] or {name,quantity,unit}[]
       const normalized = (initialMenu.ingredients || []).map((it) =>
         typeof it === 'string'
           ? { name: it, quantity: 0, unit: 'grams' }
-          : { name: it.name || '', quantity: (typeof it.quantity === 'number' ? it.quantity : parseFloat(it.quantity) || 0), unit: it.unit || 'grams' }
+          : { name: it.name || it, quantity: (typeof it.quantity === 'number' ? it.quantity : parseFloat(it.quantity) || 0), unit: it.unit || 'grams' }
       );
       setIngredients(normalized);
     } else {
       setName('');
+      setPrice(0);
+      setCategory('main');
+      setDescription('');
+      setPreparationTime(15);
       setIngredients([]);
     }
   }, [initialMenu]);
@@ -69,14 +82,22 @@ export default function AddMenu({
       }));
 
     onSave({
-      id: initialMenu?.id,
+      id: initialMenu?.id || initialMenu?.itemId,
       name: name.trim(),
-      ingredients: cleaned,
+      description: description.trim(),
+      price: price,
+      category: category,
+      preparationTime: preparationTime,
+      ingredients: cleaned
     });
   };
 
   const cancel = () => {
     setName('');
+    setPrice(0);
+    setCategory('main');
+    setDescription('');
+    setPreparationTime(15);
     setIngredients([]);
     onCancel && onCancel();
   };
@@ -101,6 +122,69 @@ export default function AddMenu({
                 onChange={(e) => setName(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 placeholder="Enter dish name..."
+              />
+            </div>
+
+            {/* Price and Category */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Price (₹) *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(Number(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="0.00"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Category *
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                >
+                  <option value="appetizer">Appetizer</option>
+                  <option value="main">Main Course</option>
+                  <option value="dessert">Dessert</option>
+                  <option value="beverage">Beverage</option>
+                  <option value="special">Special</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Prep Time (mins)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={preparationTime}
+                  onChange={(e) => setPreparationTime(Number(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="15"
+                />
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                placeholder="Brief description of the dish..."
               />
             </div>
 

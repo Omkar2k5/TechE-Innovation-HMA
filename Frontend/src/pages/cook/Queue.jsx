@@ -286,7 +286,7 @@ export default function CookQueue() {
   const submitShortage = async ({ name, qty }) => {
     setShowShortage(false)
     try {
-      await api.post("/inventory/shortage", { name, qty })
+      await api.post("/menu/ingredients/shortage", { name, qty })
       setNotice(`Shortage reported: ${name}${qty ? ` (qty ${qty})` : ""}`)
       setTimeout(() => setNotice(""), 2000)
     } catch (err) {

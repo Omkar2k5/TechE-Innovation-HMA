@@ -69,6 +69,30 @@ const savedIngredientSchema = new Schema({
     enum: ['vegetable', 'meat', 'dairy', 'grain', 'spice', 'sauce', 'other'],
     default: 'other'
   },
+  unit: {
+    type: String,
+    default: 'grams'
+  },
+  stock: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  costPerUnit: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  supplier: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  lowStockThreshold: {
+    type: Number,
+    default: 5,
+    min: 0
+  },
   isActive: {
     type: Boolean,
     default: true

@@ -29,6 +29,8 @@ export default function InventoryDashboard(){
       )
       
       if (response.data.success) {
+        console.log('📥 Received menu data:', response.data.data)
+        
         // Map savedIngredients to items format for inventory table
         const ingredients = (response.data.data.savedIngredients || []).map((ing, idx) => ({
           _id: ing._id || `ing_${idx}`,
@@ -36,23 +38,36 @@ export default function InventoryDashboard(){
           unit: ing.unit || 'grams',
           category: ing.category || 'other',
           stock: ing.stock || 0,
-          isActive: ing.isActive
+          costPerUnit: ing.costPerUnit || 0,
+          supplier: ing.supplier || '',
+          lowStockThreshold: ing.lowStockThreshold || 5,
+          isActive: ing.isActive !== false
         }))
+        
+        console.log('🔄 Mapped ingredients:', ingredients)
         
         // Map menuItems to menus format
         const menuItems = (response.data.data.menuItems || []).map(item => ({
-          _id: item._id,
+          _id: item._id || item.itemId,
+          itemId: item.itemId,
           name: item.name,
+          description: item.description || '',
           price: item.price || 0,
-          category: item.category,
-          avgPrepTimeMins: item.avgPrepTimeMins,
+          category: item.category || 'main',
+          preparationTime: item.preparationTime || item.avgPrepTimeMins || 15,
           ingredients: item.ingredients || [],
-          active: item.active
+          allergens: item.allergens || [],
+          nutritionalInfo: item.nutritionalInfo || {},
+          isAvailable: item.isAvailable !== false,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt
         }))
         
         setItems(ingredients)
         setMenus(menuItems)
         setError(null)
+      } else {
+        setError(response.data.message || 'Failed to load menu data')
       }
     } catch (err) {
       console.error('Failed to fetch menu data:', err)
@@ -73,43 +88,101 @@ export default function InventoryDashboard(){
   // Ingredient/Item CRUD (for savedIngredients)
   const addItem = async (item) => {
     try {
+      console.log('Adding ingredient:', item)
       const token = localStorage.getItem('authToken')
-      await axios.post(
+      
+      if (!token) {
+        alert('No authentication token found. Please log in again.')
+        return
+      }
+      
+      const response = await axios.post(
         'http://localhost:5000/api/menu/ingredients',
-        { name: item.name, category: item.category, stock: item.stock, unit: item.unit },
+        { 
+          name: item.name, 
+          category: item.category || 'other', 
+          stock: item.stock || 0, 
+          unit: item.unit || 'grams',
+          costPerUnit: item.costPerUnit || 0,
+          supplier: item.supplier || ''
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      fetchMenuData()
+      
+      console.log('Add ingredient response:', response.data)
+      await fetchMenuData()
+      alert('Ingredient added successfully!')
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add ingredient')
+      console.error('Add ingredient error:', err)
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to add ingredient'
+      alert(`Error: ${errorMsg}`)
     }
   }
   
-  const updateItem = async (name, patch) => {
+  const updateItem = async (itemId, patch) => {
     try {
+      console.log('Updating ingredient:', { itemId, patch })
       const token = localStorage.getItem('authToken')
-      await axios.put(
-        `http://localhost:5000/api/menu/ingredients/${encodeURIComponent(name)}/stock`,
+      
+      if (!token) {
+        alert('No authentication token found. Please log in again.')
+        return
+      }
+      
+      const item = items.find(i => i._id === itemId)
+      if (!item) {
+        alert('Item not found in local data')
+        return
+      }
+      
+      console.log('Found item to update:', item)
+      
+      const response = await axios.put(
+        `http://localhost:5000/api/menu/ingredients/${encodeURIComponent(item.name)}/stock`,
         { stock: patch.stock },
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      fetchMenuData()
+      
+      console.log('Update ingredient response:', response.data)
+      await fetchMenuData()
+      alert('Ingredient updated successfully!')
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update ingredient')
+      console.error('Update ingredient error:', err)
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to update ingredient'
+      alert(`Error: ${errorMsg}`)
     }
   }
   
-  const deleteItem = async (name) => {
-    if (!confirm(`Delete ingredient "${name}"?`)) return
+  const deleteItem = async (itemId) => {
+    const item = items.find(i => i._id === itemId)
+    if (!item) {
+      alert('Item not found in local data')
+      return
+    }
+    
+    if (!confirm(`Delete ingredient "${item.name}"?`)) return
+    
     try {
+      console.log('Deleting ingredient:', item.name)
       const token = localStorage.getItem('authToken')
-      await axios.delete(
-        `http://localhost:5000/api/menu/ingredients/${encodeURIComponent(name)}`,
+      
+      if (!token) {
+        alert('No authentication token found. Please log in again.')
+        return
+      }
+      
+      const response = await axios.delete(
+        `http://localhost:5000/api/menu/ingredients/${encodeURIComponent(item.name)}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      fetchMenuData()
+      
+      console.log('Delete ingredient response:', response.data)
+      await fetchMenuData()
+      alert('Ingredient deleted successfully!')
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete ingredient')
+      console.error('Delete ingredient error:', err)
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to delete ingredient'
+      alert(`Error: ${errorMsg}`)
     }
   }
 
@@ -117,14 +190,23 @@ export default function InventoryDashboard(){
   const addMenu = async (menu) => {
     try {
       const token = localStorage.getItem('authToken')
+      
+      // Convert ingredients format from AddMenu component to API format
+      const ingredientNames = (menu.ingredients || [])
+        .filter(ing => ing && ing.name && ing.name.trim())
+        .map(ing => ing.name.trim())
+      
       await axios.post(
         'http://localhost:5000/api/menu/items',
         {
           name: menu.name,
+          description: menu.description || '',
           price: menu.price || 0,
-          category: menu.category || 'Main Course',
-          avgPrepTimeMins: menu.avgPrepTimeMins || 15,
-          ingredients: menu.ingredients || []
+          category: menu.category || 'main',
+          preparationTime: menu.preparationTime || 15,
+          ingredients: ingredientNames,
+          allergens: menu.allergens || [],
+          nutritionalInfo: menu.nutritionalInfo || {}
         },
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -137,9 +219,18 @@ export default function InventoryDashboard(){
   const updateMenu = async (itemId, patch) => {
     try {
       const token = localStorage.getItem('authToken')
+      
+      // Convert ingredients format if present
+      const updateData = { ...patch }
+      if (updateData.ingredients) {
+        updateData.ingredients = updateData.ingredients
+          .filter(ing => ing && ing.name && ing.name.trim())
+          .map(ing => ing.name.trim())
+      }
+      
       await axios.put(
         `http://localhost:5000/api/menu/items/${itemId}`,
-        patch,
+        updateData,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       fetchMenuData()
