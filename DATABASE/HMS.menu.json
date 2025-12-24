@@ -1,0 +1,94 @@
+[{
+  "_id": {
+    "$oid": "737f1f77bcf86cd799439081"
+  },
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "name": "Grilled Salmon",
+  "description": "Fresh salmon grilled to perfection with herbs and lemon",
+  "category": "Main Course",
+  "price": 24.99,
+  "cost": 8.5,
+  "image": "grilled-salmon.jpg",
+  "ingredients": [
+    "salmon",
+    "olive oil",
+    "herbs",
+    "lemon"
+  ],
+  "dietaryInfo": {
+    "vegetarian": false,
+    "vegan": false,
+    "glutenFree": true,
+    "spicyLevel": 0
+  },
+  "preparationTime": 15,
+  "isAvailable": true,
+  "tags": [
+    "signature",
+    "chef_recommended"
+  ],
+  "variations": [
+    {
+      "name": "Extra Sauce",
+      "price": 1.5
+    },
+    {
+      "name": "Double Portion",
+      "price": 10
+    }
+  ],
+  "sortOrder": 1,
+  "createdAt": {
+    "$date": "2023-01-17T08:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T10:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "737f1f77bcf86cd799439082"
+  },
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "name": "Margherita Pizza",
+  "description": "Classic pizza with tomato, mozzarella, and basil",
+  "category": "Main Course",
+  "price": 16.99,
+  "cost": 5.2,
+  "image": "margherita-pizza.jpg",
+  "ingredients": [
+    "flour",
+    "tomato",
+    "mozzarella",
+    "basil"
+  ],
+  "dietaryInfo": {
+    "vegetarian": true,
+    "vegan": false,
+    "glutenFree": false,
+    "spicyLevel": 0
+  },
+  "preparationTime": 12,
+  "isAvailable": true,
+  "tags": [
+    "popular",
+    "vegetarian"
+  ],
+  "variations": [
+    {
+      "name": "Extra Cheese",
+      "price": 2
+    }
+  ],
+  "sortOrder": 2,
+  "createdAt": {
+    "$date": "2023-01-17T08:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T10:00:00.000Z"
+  }
+}]

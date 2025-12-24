@@ -1,0 +1,169 @@
+[{
+  "_id": {
+    "$oid": "607f1f77bcf86cd799439021"
+  },
+  "email": "robert.williams@grandhotel.com",
+  "password": "$2b$10$hashedpassword456",
+  "firstName": "Robert",
+  "lastName": "Williams",
+  "phone": "+1-555-0124",
+  "role": "owner",
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "permissions": [
+    "users:manage",
+    "reports:view",
+    "financial:view",
+    "settings:manage"
+  ],
+  "status": "active",
+  "lastLogin": {
+    "$date": "2023-06-15T10:30:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2023-01-15T09:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T17:20:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "507f1f77bcf86cd799439011"
+  },
+  "email": "sarah.johnson@grandhotel.com",
+  "password": "$2b$10$hashedpassword789",
+  "firstName": "Sarah",
+  "lastName": "Johnson",
+  "phone": "+1-555-0125",
+  "role": "manager",
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "employeeId": "MGR001",
+  "permissions": [
+    "staff:manage",
+    "inventory:view",
+    "tables:manage",
+    "reports:view"
+  ],
+  "roleSpecific": {
+    "managedSections": [
+      "A",
+      "B"
+    ]
+  },
+  "status": "active",
+  "lastLogin": {
+    "$date": "2023-06-15T09:15:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2023-01-20T08:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T18:10:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "507f1f77bcf86cd799439012"
+  },
+  "email": "emily.chen@grandhotel.com",
+  "password": "$2b$10$hashedpassword012",
+  "firstName": "Emily",
+  "lastName": "Chen",
+  "phone": "+1-555-0126",
+  "role": "receptionist",
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "employeeId": "REC001",
+  "permissions": [
+    "reservations:manage",
+    "tables:view",
+    "billing:process"
+  ],
+  "roleSpecific": {
+    "deskNumber": "Front Desk 1"
+  },
+  "status": "active",
+  "lastLogin": {
+    "$date": "2023-06-15T08:45:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2023-02-10T08:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T15:05:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "507f1f77bcf86cd799439013"
+  },
+  "email": "david.wilson@grandhotel.com",
+  "password": "$2b$10$hashedpassword345",
+  "firstName": "David",
+  "lastName": "Wilson",
+  "phone": "+1-555-0127",
+  "role": "cook",
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "employeeId": "COK001",
+  "permissions": [
+    "orders:view",
+    "orders:update"
+  ],
+  "roleSpecific": {
+    "specialty": "Grill",
+    "station": "Main Grill Station"
+  },
+  "status": "active",
+  "lastLogin": {
+    "$date": "2023-06-15T10:30:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2023-02-15T08:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T17:10:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "507f1f77bcf86cd799439014"
+  },
+  "email": "michael.rodriguez@grandhotel.com",
+  "password": "$2b$10$hashedpassword678",
+  "firstName": "Michael",
+  "lastName": "Rodriguez",
+  "phone": "+1-555-0128",
+  "role": "waiter",
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "employeeId": "WTR001",
+  "permissions": [
+    "orders:create",
+    "tables:view",
+    "billing:view"
+  ],
+  "roleSpecific": {
+    "sections": [
+      "A",
+      "B"
+    ]
+  },
+  "status": "active",
+  "lastLogin": {
+    "$date": "2023-06-15T08:30:00.000Z"
+  },
+  "createdAt": {
+    "$date": "2023-03-01T08:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T16:45:00.000Z"
+  }
+}]

@@ -1,0 +1,30 @@
+[{
+  "_id": {
+    "$oid": "b57f1f77bcf86cd799439111"
+  },
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "orderId": {
+    "$oid": "837f1f77bcf86cd799439091"
+  },
+  "orderNumber": "ORD-20230615-001",
+  "amount": 77.52,
+  "method": "credit_card",
+  "transactionId": "txn_123456789",
+  "status": "completed",
+  "paymentDetails": {
+    "cardLast4": "4242",
+    "cardBrand": "Visa",
+    "authorizationCode": "AUTH123"
+  },
+  "processedBy": {
+    "$oid": "507f1f77bcf86cd799439012"
+  },
+  "createdAt": {
+    "$date": "2023-06-15T19:30:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T19:30:00.000Z"
+  }
+}]

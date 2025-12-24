@@ -1,0 +1,73 @@
+[{
+  "_id": {
+    "$oid": "617f1f77bcf86cd799439061"
+  },
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "number": "T01",
+  "name": "Window Table 1",
+  "capacity": 4,
+  "status": "available",
+  "location": "Main Dining",
+  "section": "A",
+  "position": {
+    "x": 120,
+    "y": 80,
+    "rotation": 0
+  },
+  "shape": "rectangle",
+  "dimensions": {
+    "width": 120,
+    "height": 80
+  },
+  "features": [
+    "window_view",
+    "power_outlet"
+  ],
+  "isActive": true,
+  "createdAt": {
+    "$date": "2023-01-16T08:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T10:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "617f1f77bcf86cd799439062"
+  },
+  "hotelId": {
+    "$oid": "807f1f77bcf86cd799439041"
+  },
+  "number": "T02",
+  "name": "Booth Table 1",
+  "capacity": 6,
+  "status": "occupied",
+  "location": "Main Dining",
+  "section": "B",
+  "position": {
+    "x": 200,
+    "y": 120,
+    "rotation": 0
+  },
+  "shape": "rectangle",
+  "dimensions": {
+    "width": 150,
+    "height": 100
+  },
+  "features": [
+    "privacy",
+    "comfort_seating"
+  ],
+  "currentOrderId": {
+    "$oid": "837f1f77bcf86cd799439091"
+  },
+  "isActive": true,
+  "createdAt": {
+    "$date": "2023-01-16T08:00:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2023-06-15T19:00:00.000Z"
+  }
+}]
