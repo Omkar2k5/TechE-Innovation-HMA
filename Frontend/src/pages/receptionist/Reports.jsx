@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import api from '../../lib/api'
 
+// Animated Background Shapes
+const AnimatedShapes = () => (
+  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '0s' }}></div>
+    <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-float-slow" style={{ animationDelay: '2s' }}></div>
+    <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-emerald-400/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
+    <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-gradient-to-br from-indigo-400/20 to-purple-400/20 rounded-full blur-3xl animate-float-slow" style={{ animationDelay: '1s' }}></div>
+  </div>
+)
+
 // Simple Bar Chart Component
 const BarChart = ({ data, maxValue }) => {
   if (!data || data.length === 0) return <div className="text-gray-500 text-sm">No data available</div>
-  
+
   return (
     <div className="flex items-end justify-between gap-2 h-48">
       {data.map((item, index) => {
@@ -12,7 +22,7 @@ const BarChart = ({ data, maxValue }) => {
         return (
           <div key={index} className="flex-1 flex flex-col items-center gap-1">
             <div className="text-xs font-medium text-gray-700">₹{item.value}</div>
-            <div 
+            <div
               className="w-full bg-blue-500 rounded-t transition-all hover:bg-blue-600"
               style={{ height: `${height}%`, minHeight: item.value > 0 ? '8px' : '0px' }}
               title={`${item.label}: ₹${item.value}`}
@@ -28,17 +38,17 @@ const BarChart = ({ data, maxValue }) => {
 // Simple Pie Chart Component
 const PieChart = ({ data }) => {
   if (!data || data.length === 0) return <div className="text-gray-500 text-sm">No data available</div>
-  
+
   const total = data.reduce((sum, item) => sum + item.value, 0)
   const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500']
-  
+
   return (
     <div className="flex flex-col items-center">
       <div className="w-48 h-48 rounded-full overflow-hidden flex" style={{ transform: 'rotate(-90deg)' }}>
         {data.map((item, index) => {
           const percentage = total > 0 ? (item.value / total) * 100 : 0
           return (
-            <div 
+            <div
               key={index}
               className={colors[index % colors.length]}
               style={{ width: `${percentage}%` }}
@@ -66,16 +76,20 @@ const PieChart = ({ data }) => {
 }
 
 // Card Component
-const StatCard = ({ title, value, subtitle, icon, color = 'bg-blue-100', textColor = 'text-blue-800' }) => (
-  <div className={`rounded-xl border-2 ${color} p-6`}>
-    <div className="flex items-start justify-between">
-      <div>
-        <div className="text-sm font-medium text-gray-600 mb-1">{title}</div>
-        <div className={`text-3xl font-bold ${textColor}`}>{value}</div>
-        {subtitle && <div className="text-xs text-gray-600 mt-1">{subtitle}</div>}
+const StatCard = ({ title, value, subtitle, icon, gradient = 'bg-gradient-to-br from-blue-100/50 to-cyan-100/50' }) => (
+  <div className={`group relative rounded-2xl p-6 backdrop-blur-sm bg-white/80 border border-white/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden`}>
+    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${gradient}`}></div>
+    <div className="relative z-10">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-sm font-medium text-gray-600 mb-2">{title}</div>
+          <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{value}</div>
+          {subtitle && <div className="text-xs text-gray-600 mt-2">{subtitle}</div>}
+        </div>
+        {icon && <div className="text-4xl">{icon}</div>}
       </div>
-      {icon && <div className="text-3xl">{icon}</div>}
     </div>
+    <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-gradient-to-br from-white/40 to-transparent rounded-full blur-xl"></div>
   </div>
 )
 
@@ -106,11 +120,11 @@ export default function ReportsPage() {
   const fetchReportsData = async () => {
     try {
       setLoading(true)
-      
+
       // Fetch bills/analytics data
       const billsResponse = await api.get('/bills')
       const reservationsResponse = await api.get('/reservations')
-      
+
       // Process bills data - bills are in nested structure
       let bills = []
       if (billsResponse && billsResponse.success && billsResponse.data) {
@@ -166,7 +180,7 @@ export default function ReportsPage() {
       const dailyCollection = paidBills.reduce((sum, bill) => sum + (bill.paymentDetails?.grandTotal || 0), 0)
 
       // Calculate pending bills
-      const pendingBillsCount = filteredBills.filter(bill => 
+      const pendingBillsCount = filteredBills.filter(bill =>
         bill.paymentDetails?.paymentStatus === 'PENDING' || bill.paymentDetails?.paymentStatus === 'PARTIAL'
       ).length
       const pendingAmount = filteredBills
@@ -240,8 +254,8 @@ export default function ReportsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading reports...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-200 border-t-purple-600 mx-auto"></div>
+          <p className="mt-6 text-gray-600 font-medium">Loading reports...</p>
         </div>
       </div>
     )
@@ -250,181 +264,178 @@ export default function ReportsPage() {
   const maxRevenueValue = Math.max(...chartData.dailyRevenue.map(d => d.value), 1)
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Reports & Analytics</h1>
-          <p className="text-gray-600 mt-1">Track your business performance</p>
-        </div>
-        
-        {/* Date Range Selector */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setDateRange('today')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              dateRange === 'today' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Today
-          </button>
-          <button
-            onClick={() => setDateRange('week')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              dateRange === 'week' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            This Week
-          </button>
-          <button
-            onClick={() => setDateRange('month')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              dateRange === 'month' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            This Month
-          </button>
-          <button
-            onClick={() => fetchReportsData()}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-800 text-white hover:bg-gray-700 transition-colors"
-          >
-            🔄 Refresh
-          </button>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-teal-50 relative">
+      <AnimatedShapes />
 
-      {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Daily Collection"
-          value={`₹${reportsData.dailyCollection.toLocaleString()}`}
-          subtitle={`${reportsData.completedOrders} completed orders`}
-          icon="💰"
-          color="bg-green-100"
-          textColor="text-green-800"
-        />
-        <StatCard
-          title="Pending Bills"
-          value={reportsData.pendingBills}
-          subtitle={`Worth ₹${reportsData.pendingAmount?.toLocaleString() || 0}`}
-          icon="⏳"
-          color="bg-yellow-100"
-          textColor="text-yellow-800"
-        />
-        <StatCard
-          title="No-Shows"
-          value={reportsData.noShows}
-          subtitle={`Out of ${reportsData.totalReservations} reservations`}
-          icon="❌"
-          color="bg-red-100"
-          textColor="text-red-800"
-        />
-        <StatCard
-          title="Avg Order Value"
-          value={`₹${reportsData.averageOrderValue.toLocaleString()}`}
-          subtitle="Per order"
-          icon="📊"
-          color="bg-blue-100"
-          textColor="text-blue-800"
-        />
-      </div>
+      <div className="relative z-10 p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-700 via-blue-600 to-teal-600 bg-clip-text text-transparent mb-2">Reports & Analytics</h1>
+            <p className="text-gray-700 font-medium">Track your business performance</p>
+          </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Daily Revenue Chart */}
-        <div className="bg-white rounded-xl shadow-md p-6 border">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Daily Revenue (Last 7 Days)</h2>
-          <BarChart data={chartData.dailyRevenue} maxValue={maxRevenueValue} />
+          {/* Date Range Selector */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setDateRange('today')}
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${dateRange === 'today'
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg scale-105'
+                  : 'bg-white/80 backdrop-blur-sm border-2 border-purple-200 text-gray-700 hover:border-purple-400'
+                }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => setDateRange('week')}
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${dateRange === 'week'
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg scale-105'
+                  : 'bg-white/80 backdrop-blur-sm border-2 border-purple-200 text-gray-700 hover:border-purple-400'
+                }`}
+            >
+              This Week
+            </button>
+            <button
+              onClick={() => setDateRange('month')}
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${dateRange === 'month'
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg scale-105'
+                  : 'bg-white/80 backdrop-blur-sm border-2 border-purple-200 text-gray-700 hover:border-purple-400'
+                }`}
+            >
+              This Month
+            </button>
+            <button
+              onClick={() => fetchReportsData()}
+              className="px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-gray-700 to-gray-900 text-white hover:shadow-lg hover:scale-105 transition-all duration-300"
+            >
+              🔄 Refresh
+            </button>
+          </div>
         </div>
 
-        {/* Order Status Distribution */}
-        <div className="bg-white rounded-xl shadow-md p-6 border">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Order Status Distribution</h2>
-          {chartData.orderStatus.length > 0 ? (
-            <PieChart data={chartData.orderStatus} />
-          ) : (
-            <div className="text-gray-500 text-center py-12">No orders yet</div>
-          )}
+        {/* Key Metrics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <StatCard
+            title="Daily Collection"
+            value={`₹${reportsData.dailyCollection.toLocaleString()}`}
+            subtitle={`${reportsData.completedOrders} completed orders`}
+            icon="💰"
+            gradient="bg-gradient-to-br from-emerald-100/50 to-teal-100/50"
+          />
+          <StatCard
+            title="Pending Bills"
+            value={reportsData.pendingBills}
+            subtitle={`Worth ₹${reportsData.pendingAmount?.toLocaleString() || 0}`}
+            icon="⏳"
+            gradient="bg-gradient-to-br from-amber-100/50 to-orange-100/50"
+          />
+          <StatCard
+            title="No-Shows"
+            value={reportsData.noShows}
+            subtitle={`Out of ${reportsData.totalReservations} reservations`}
+            icon="❌"
+            gradient="bg-gradient-to-br from-red-100/50 to-pink-100/50"
+          />
+          <StatCard
+            title="Avg Order Value"
+            value={`₹${reportsData.averageOrderValue.toLocaleString()}`}
+            subtitle="Per order"
+            icon="📊"
+            gradient="bg-gradient-to-br from-blue-100/50 to-cyan-100/50"
+          />
         </div>
 
-        {/* Payment Methods */}
-        <div className="bg-white rounded-xl shadow-md p-6 border">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Payment Methods</h2>
-          {chartData.paymentMethods.length > 0 ? (
-            <div className="space-y-3">
-              {chartData.paymentMethods.map((method, index) => {
-                const total = chartData.paymentMethods.reduce((sum, m) => sum + m.value, 0)
-                const percentage = total > 0 ? (method.value / total) * 100 : 0
-                return (
-                  <div key={index}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium text-gray-700">{method.label}</span>
-                      <span className="text-gray-600">{method.value} orders ({percentage.toFixed(1)}%)</span>
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Daily Revenue Chart */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/50 hover:shadow-2xl transition-all duration-300">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">Daily Revenue (Last 7 Days)</h2>
+            <BarChart data={chartData.dailyRevenue} maxValue={maxRevenueValue} />
+          </div>
+
+          {/* Order Status Distribution */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/50 hover:shadow-2xl transition-all duration-300">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">Order Status Distribution</h2>
+            {chartData.orderStatus.length > 0 ? (
+              <PieChart data={chartData.orderStatus} />
+            ) : (
+              <div className="text-gray-500 text-center py-12">No orders yet</div>
+            )}
+          </div>
+
+          {/* Payment Methods */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/50 hover:shadow-2xl transition-all duration-300">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">Payment Methods</h2>
+            {chartData.paymentMethods.length > 0 ? (
+              <div className="space-y-3">
+                {chartData.paymentMethods.map((method, index) => {
+                  const total = chartData.paymentMethods.reduce((sum, m) => sum + m.value, 0)
+                  const percentage = total > 0 ? (method.value / total) * 100 : 0
+                  return (
+                    <div key={index}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium text-gray-700">{method.label}</span>
+                        <span className="text-gray-600">{method.value} orders ({percentage.toFixed(1)}%)</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 h-2.5 rounded-full transition-all"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="text-gray-500 text-center py-12">No payment data</div>
-          )}
-        </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-gray-500 text-center py-12">No payment data</div>
+            )}
+          </div>
 
-        {/* Additional Stats */}
-        <div className="bg-white rounded-xl shadow-md p-6 border">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Quick Stats</h2>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center py-3 border-b">
-              <span className="text-gray-700 font-medium">Total Orders</span>
-              <span className="text-2xl font-bold text-blue-600">{reportsData.completedOrders + reportsData.cancelledOrders}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b">
-              <span className="text-gray-700 font-medium">Completed Orders</span>
-              <span className="text-2xl font-bold text-green-600">{reportsData.completedOrders}</span>
-            </div>
-            <div className="flex justify-between items-center py-3 border-b">
-              <span className="text-gray-700 font-medium">Cancelled Orders</span>
-              <span className="text-2xl font-bold text-red-600">{reportsData.cancelledOrders}</span>
-            </div>
-            <div className="flex justify-between items-center py-3">
-              <span className="text-gray-700 font-medium">Total Reservations</span>
-              <span className="text-2xl font-bold text-purple-600">{reportsData.totalReservations}</span>
+          {/* Additional Stats */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/50 hover:shadow-2xl transition-all duration-300">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">Quick Stats</h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <span className="text-gray-700 font-medium">Total Orders</span>
+                <span className="text-2xl font-bold text-blue-600">{reportsData.completedOrders + reportsData.cancelledOrders}</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <span className="text-gray-700 font-medium">Completed Orders</span>
+                <span className="text-2xl font-bold text-green-600">{reportsData.completedOrders}</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                <span className="text-gray-700 font-medium">Cancelled Orders</span>
+                <span className="text-2xl font-bold text-red-600">{reportsData.cancelledOrders}</span>
+              </div>
+              <div className="flex justify-between items-center py-3">
+                <span className="text-gray-700 font-medium">Total Reservations</span>
+                <span className="text-2xl font-bold text-purple-600">{reportsData.totalReservations}</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Summary Section */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Revenue Summary</h2>
-        <p className="text-blue-100 mb-4">Performance overview for selected period</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <div className="text-blue-200 text-sm">Total Revenue</div>
-            <div className="text-3xl font-bold">₹{reportsData.totalRevenue.toLocaleString()}</div>
-          </div>
-          <div>
-            <div className="text-blue-200 text-sm">Completed Orders</div>
-            <div className="text-3xl font-bold">{reportsData.completedOrders}</div>
-          </div>
-          <div>
-            <div className="text-blue-200 text-sm">Success Rate</div>
-            <div className="text-3xl font-bold">
-              {reportsData.completedOrders + reportsData.cancelledOrders > 0
-                ? ((reportsData.completedOrders / (reportsData.completedOrders + reportsData.cancelledOrders)) * 100).toFixed(1)
-                : 0}%
+        {/* Summary Section */}
+        <div className="bg-gradient-to-r from-purple-600 via-blue-600 to-teal-600 rounded-2xl shadow-2xl p-8 text-white">
+          <h2 className="text-3xl font-bold mb-3">Revenue Summary</h2>
+          <p className="text-purple-100 mb-6">Performance overview for selected period</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <div className="text-purple-200 text-sm mb-1">Total Revenue</div>
+              <div className="text-4xl font-bold">₹{reportsData.totalRevenue.toLocaleString()}</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <div className="text-purple-200 text-sm mb-1">Completed Orders</div>
+              <div className="text-4xl font-bold">{reportsData.completedOrders}</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <div className="text-purple-200 text-sm mb-1">Success Rate</div>
+              <div className="text-4xl font-bold">
+                {reportsData.completedOrders + reportsData.cancelledOrders > 0
+                  ? ((reportsData.completedOrders / (reportsData.completedOrders + reportsData.cancelledOrders)) * 100).toFixed(1)
+                  : 0}%
+              </div>
             </div>
           </div>
         </div>

@@ -67,36 +67,49 @@ const Sidebar = ({ activeSection, setActiveSection, onLogout, features = {} }) =
   const items = allItems.filter(item => features[item.feature] === true)
 
   return (
-    <aside className="w-64 min-h-screen" style={{ backgroundColor: '#1a1d2e' }}>
-      <div className="p-6 border-b border-gray-700/50">
-        <h2 className="text-xl font-bold text-white">Owner</h2>
-      </div>
-      <nav className="mt-2 px-3">
-        {items.map((it) => {
-          const IconComponent = it.icon
-          return (
-            <button
-              key={it.id}
-              onClick={() => setActiveSection(it.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors mb-1 ${activeSection === it.id
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-300 hover:bg-gray-700/50 hover:text-white"
-                }`}
-            >
-              <IconComponent />
-              {it.label}
-            </button>
-          )
-        })}
-      </nav>
-      <div className="px-3 mt-4">
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
-        >
-          <LogoutIcon />
-          Logout
-        </button>
+    <aside className="w-64 min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 shadow-2xl relative overflow-hidden">
+      {/* Decorative gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-blue-500/10 pointer-events-none"></div>
+
+      {/* Floating blur orbs */}
+      <div className="absolute top-10 right-10 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-10 left-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl"></div>
+
+      <div className="relative z-10">
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <div className="w-1 h-8 bg-gradient-to-b from-purple-400 to-blue-400 rounded-full"></div>
+            <h2 className="text-2xl font-bold text-white">Owner</h2>
+          </div>
+        </div>
+        <nav className="mt-2 px-3">
+          {items.map((it) => {
+            const IconComponent = it.icon
+            return (
+              <button
+                key={it.id}
+                onClick={() => setActiveSection(it.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 mb-1 relative overflow-hidden group ${activeSection === it.id
+                    ? "bg-white/20 text-white shadow-lg backdrop-blur-sm"
+                    : "text-purple-100 hover:bg-white/10 hover:text-white"
+                  }`}
+              >
+                <IconComponent />
+                <span className="relative z-10">{it.label}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+              </button>
+            )
+          })}
+        </nav>
+        <div className="px-3 mt-4">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-300 hover:bg-red-900/30 border border-red-400/30 hover:border-red-400/50 transition-all duration-300"
+          >
+            <LogoutIcon />
+            Logout
+          </button>
+        </div>
       </div>
     </aside>
   )
@@ -153,7 +166,7 @@ export default function AdminDashboard() {
   const hasNoFeatures = !getDefaultSection()
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-teal-50">
       <Sidebar
         activeSection={activeSection}
         setActiveSection={setActiveSection}
@@ -162,8 +175,8 @@ export default function AdminDashboard() {
       />
       <main className="flex-1 p-6 overflow-auto">
         {hasNoFeatures ? (
-          <div className="p-6">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">No Features Available</h1>
+          <div className="p-6 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent mb-4">No Features Available</h1>
             <p className="text-gray-600">No features are available for your account. Please contact your administrator.</p>
           </div>
         ) : (

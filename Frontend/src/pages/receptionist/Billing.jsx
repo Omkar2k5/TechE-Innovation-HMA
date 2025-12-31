@@ -2,22 +2,32 @@ import React, { useState, useEffect, useMemo } from 'react'
 import api from '../../lib/api'
 import { useAuth } from '../../auth/AuthContext'
 
+// Animated Background Shapes
+const AnimatedShapes = () => (
+  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '0s' }}></div>
+    <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-float-slow" style={{ animationDelay: '2s' }}></div>
+    <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-emerald-400/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
+    <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-gradient-to-br from-indigo-400/20 to-purple-400/20 rounded-full blur-3xl animate-float-slow" style={{ animationDelay: '1s' }}></div>
+  </div>
+)
+
 // Countdown Timer Component - shows time remaining until estimated completion
 const CountdownTimer = ({ estimatedCompletionTime, orderStatus, startedAt }) => {
   const [display, setDisplay] = useState('')
   const [isOvertime, setIsOvertime] = useState(false)
-  
+
   useEffect(() => {
     // Don't show timer if order is completed/served or hasn't started cooking
     if (!estimatedCompletionTime || !startedAt || ['READY', 'SERVED', 'COMPLETED'].includes(orderStatus)) {
       return
     }
-    
+
     const updateTimer = () => {
       const now = Date.now()
       const completionTime = new Date(estimatedCompletionTime).getTime()
       const diff = Math.floor((completionTime - now) / 1000)
-      
+
       if (diff < 0) {
         setIsOvertime(true)
         const overtime = Math.abs(diff)
@@ -31,32 +41,31 @@ const CountdownTimer = ({ estimatedCompletionTime, orderStatus, startedAt }) => 
         setDisplay(`${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`)
       }
     }
-    
+
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
-    
+
     return () => clearInterval(interval)
   }, [estimatedCompletionTime, orderStatus, startedAt])
-  
+
   // Show "Not Started" if order is PENDING
   if (orderStatus === 'PENDING') {
     return <span className="font-mono text-sm text-slate-500">Not Started</span>
   }
-  
+
   // Show "Ready" if order is completed
   if (['READY', 'SERVED', 'COMPLETED'].includes(orderStatus)) {
     return <span className="font-mono text-sm font-bold text-green-600">READY</span>
   }
-  
+
   // Don't show timer if cooking hasn't started
   if (!startedAt) {
     return <span className="font-mono text-sm text-slate-500">Waiting...</span>
   }
-  
+
   return (
-    <span className={`font-mono text-sm font-bold ${
-      isOvertime ? 'text-red-600' : 'text-blue-600'
-    }`}>
+    <span className={`font-mono text-sm font-bold ${isOvertime ? 'text-red-600' : 'text-blue-600'
+      }`}>
       {display}
       {isOvertime && ' ⏰'}
     </span>
@@ -209,17 +218,16 @@ const OrderDetailsModal = ({ order, onClose, onUpdateBilling, onUpdateOrder }) =
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Order Status</h3>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                order.orderStatus === 'COMPLETED'
-                  ? 'bg-green-100 text-green-800'
-                  : order.orderStatus === 'ONGOING'
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${order.orderStatus === 'COMPLETED'
+                ? 'bg-green-100 text-green-800'
+                : order.orderStatus === 'ONGOING'
                   ? 'bg-blue-100 text-blue-800'
                   : 'bg-yellow-100 text-yellow-800'
-              }`}>
+                }`}>
                 {order.orderStatus}
               </span>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Placed At:</span>
@@ -274,13 +282,13 @@ const OrderDetailsModal = ({ order, onClose, onUpdateBilling, onUpdateOrder }) =
                 </button>
               )}
             </div>
-            
+
             {editingBill ? (
               <div className="bg-blue-50 rounded-lg p-4 space-y-4 border border-blue-200">
                 <div className="text-sm text-blue-700 mb-3 font-medium">
                   ⚠️ Edit Mode - You can adjust the billing details
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Subtotal:</span>
@@ -296,7 +304,7 @@ const OrderDetailsModal = ({ order, onClose, onUpdateBilling, onUpdateOrder }) =
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <span className="font-medium">GST/Tax:</span>
                     <div className="flex items-center space-x-2">
@@ -311,13 +319,13 @@ const OrderDetailsModal = ({ order, onClose, onUpdateBilling, onUpdateOrder }) =
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-between font-bold text-lg border-t pt-2">
                     <span>Grand Total:</span>
                     <span className="text-green-600">₹{billDetails.grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
-                
+
                 <div className="flex space-x-2 pt-2">
                   <button
                     onClick={handleUpdateBillDetails}
@@ -357,11 +365,10 @@ const OrderDetailsModal = ({ order, onClose, onUpdateBilling, onUpdateOrder }) =
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t">
                   <span>Payment Status:</span>
-                  <span className={`px-2 py-1 rounded text-sm font-medium ${
-                    order.billDetails.paymentStatus === 'PAID'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
+                  <span className={`px-2 py-1 rounded text-sm font-medium ${order.billDetails.paymentStatus === 'PAID'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                    }`}>
                     {order.billDetails.paymentStatus}
                   </span>
                 </div>
@@ -403,7 +410,7 @@ const OrderDetailsModal = ({ order, onClose, onUpdateBilling, onUpdateOrder }) =
                 </button>
               </div>
             )}
-            
+
             {order.orderStatus === 'ONGOING' && !editingBill && (
               <button
                 onClick={handleMarkAsCompleted}
@@ -413,7 +420,7 @@ const OrderDetailsModal = ({ order, onClose, onUpdateBilling, onUpdateOrder }) =
                 {updating ? 'Updating...' : 'Mark Order as Completed'}
               </button>
             )}
-            
+
             <button
               onClick={onClose}
               className="w-full py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium"
@@ -444,21 +451,21 @@ export default function BillingPage() {
       try {
         console.log('🔄 Initializing billing page data...');
         console.log('👤 Current user:', user);
-        
+
         // Check if user is authenticated
         const token = localStorage.getItem('authToken');
         console.log('🔐 Auth token exists:', !!token);
-        
+
         if (!token || !user) {
           setError('Please log in to access orders and billing.');
           setLoading(false);
           return;
         }
-        
+
         console.log('🏨 User hotel:', user.hotel?.id, user.hotel?.name);
-        
+
         await fetchOrders();
-        
+
         console.log('✅ Billing page data loaded successfully');
       } catch (err) {
         console.error('❌ Error initializing billing page:', err);
@@ -467,14 +474,14 @@ export default function BillingPage() {
         setLoading(false);
       }
     };
-    
+
     initializeData();
   }, [])
 
   const fetchOrders = async () => {
     try {
       console.log('🔍 Fetching orders and bills from API...');
-      
+
       // Fetch orders first
       let ordersResponse;
       try {
@@ -487,7 +494,7 @@ export default function BillingPage() {
         setOrderData(null);
         return;
       }
-      
+
       // Fetch bills second
       let billsResponse;
       try {
@@ -500,14 +507,14 @@ export default function BillingPage() {
         setOrderData(null);
         return;
       }
-      
+
       if (ordersResponse && ordersResponse.success && billsResponse && billsResponse.success) {
         const ordersData = ordersResponse.data?.orders || [];
         const billsData = billsResponse.data?.bills || [];
-        
+
         console.log('📄 Orders data:', ordersData.length, 'orders');
         console.log('📄 Bills data:', billsData.length, 'bills');
-        
+
         // If no orders, that's okay - not an error
         if (ordersData.length === 0) {
           console.log('📄 No orders found - this is normal for a new system');
@@ -516,13 +523,13 @@ export default function BillingPage() {
           setError(null);
           return;
         }
-        
+
         // Create a map of bills by orderId for quick lookup
         const billsMap = {};
         billsData.forEach(bill => {
           billsMap[bill.orderId] = bill;
         });
-        
+
         // Merge orders with their bills data
         const mergedOrders = ordersData.map(order => {
           const bill = billsMap[order.orderId];
@@ -538,7 +545,7 @@ export default function BillingPage() {
             billId: bill ? bill.billId : null
           };
         });
-        
+
         console.log('✅ Orders loaded and merged with bills:', mergedOrders.length, 'orders');
         setOrderData(ordersResponse.data);
         setOrders(mergedOrders);
@@ -563,14 +570,14 @@ export default function BillingPage() {
   const handleUpdateBilling = async (orderId, billingData) => {
     try {
       console.log('💳 Updating billing for order:', orderId, billingData);
-      
+
       // Find the order to get billId
       const order = orders.find(o => o.orderId === orderId);
       if (!order || !order.billId) {
         setError('Bill ID not found for this order');
         return;
       }
-      
+
       // Use bills API endpoint with billId
       const response = await api.put(`/bills/${order.billId}/payment`, {
         paymentMethod: billingData.paymentMethod,
@@ -578,7 +585,7 @@ export default function BillingPage() {
         paidAmount: billingData.paidAmount,
         discount: billingData.discount
       });
-      
+
       if (response && response.success) {
         console.log('✅ Billing updated successfully');
         await fetchOrders(); // Refresh data
@@ -598,7 +605,7 @@ export default function BillingPage() {
     try {
       console.log('🔄 Updating order:', orderId, orderData);
       const response = await api.put(`/orders/${orderId}`, orderData);
-      
+
       if (response && response.success) {
         console.log('✅ Order updated successfully');
         await fetchOrders(); // Refresh data
@@ -629,7 +636,7 @@ export default function BillingPage() {
     // Ongoing = PENDING payment, Completed = PAID payment
     const ongoingOrders = orders.filter(order => order.billDetails?.paymentStatus === 'PENDING')
     const completedOrders = orders.filter(order => order.billDetails?.paymentStatus === 'PAID')
-    
+
     return {
       totalOrders: orders.length,
       ongoingOrders: ongoingOrders.length,
@@ -659,265 +666,276 @@ export default function BillingPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading orders and billing...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-200 border-t-purple-600 mx-auto"></div>
+          <p className="mt-6 text-gray-600 font-medium">Loading orders and billing...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800">Orders & Billing</h1>
-          <p className="text-slate-600 mt-1">Manage table orders and process payments</p>
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-2 text-xs text-gray-500">
-              User: {user?.email} | Hotel: {user?.hotel?.name} ({user?.hotel?.id})
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-teal-50 relative">
+      <AnimatedShapes />
 
-      {/* Error Display */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
-          <div className="flex items-center justify-between">
-            <span>{error}</span>
-            <button 
-              onClick={() => setError(null)}
-              className="ml-4 text-red-400 hover:text-red-600"
-            >
-              ✕
-            </button>
+      <div className="relative z-10 p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-700 via-blue-600 to-teal-600 bg-clip-text text-transparent mb-2">Orders & Billing</h1>
+            <p className="text-gray-700 font-medium">Manage table orders and process payments</p>
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-2 text-xs text-gray-500">
+                User: {user?.email} | Hotel: {user?.hotel?.name} ({user?.hotel?.id})
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <div className="flex items-center">
-            <Icons.ShoppingCart className="w-8 h-8 text-blue-600 mr-3" />
-            <div>
-              <div className="text-2xl font-bold text-blue-700">{stats.ongoingOrders}</div>
-              <div className="text-blue-600 text-sm font-medium">Ongoing Orders</div>
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50/80 backdrop-blur-sm border-2 border-red-300 text-red-700 px-5 py-4 rounded-2xl shadow-lg animate-scale-in">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="ml-4 text-red-400 hover:text-red-600 transition-colors"
+              >
+                ✕
+              </button>
             </div>
           </div>
-        </div>
-        
-        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-          <div className="flex items-center">
-            <Icons.Clock className="w-8 h-8 text-yellow-600 mr-3" />
-            <div>
-              <div className="text-2xl font-bold text-yellow-700">{stats.pendingPayments}</div>
-              <div className="text-yellow-600 text-sm font-medium">Pending Payments</div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-          <div className="flex items-center">
-            <Icons.DollarSign className="w-8 h-8 text-green-600 mr-3" />
-            <div>
-              <div className="text-2xl font-bold text-green-700">₹{stats.totalRevenue.toFixed(2)}</div>
-              <div className="text-green-600 text-sm font-medium">Total Revenue</div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-          <div className="flex items-center">
-            <Icons.Receipt className="w-8 h-8 text-purple-600 mr-3" />
-            <div>
-              <div className="text-2xl font-bold text-purple-700">{stats.completedOrders}</div>
-              <div className="text-purple-600 text-sm font-medium">Completed Orders</div>
-            </div>
-          </div>
-        </div>
-      </div>
+        )}
 
-      {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        <button
-          onClick={() => setActiveTab('ongoing')}
-          className={`px-4 py-2 rounded-md font-medium transition-colors ${
-            activeTab === 'ongoing'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Ongoing ({stats.ongoingOrders})
-        </button>
-        <button
-          onClick={() => setActiveTab('completed')}
-          className={`px-4 py-2 rounded-md font-medium transition-colors ${
-            activeTab === 'completed'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Completed ({stats.completedOrders})
-        </button>
-        <button
-          onClick={() => setActiveTab('all')}
-          className={`px-4 py-2 rounded-md font-medium transition-colors ${
-            activeTab === 'all'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          All Orders ({stats.totalOrders})
-        </button>
-      </div>
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+          <div className="group relative rounded-2xl p-5 backdrop-blur-sm bg-white/80 border border-white/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-blue-100/50 to-cyan-100/50"></div>
+            <div className="relative z-10">
+              <div className="flex items-center">
+                <Icons.ShoppingCart className="w-8 h-8 text-blue-600 mr-3" />
+                <div>
+                  <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{stats.ongoingOrders}</div>
+                  <div className="text-sm font-medium text-gray-600">Ongoing Orders</div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      {/* Orders Table */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {activeTab === 'ongoing' ? 'Ongoing Orders' : 
-               activeTab === 'completed' ? 'Completed Orders' : 'All Orders'}
-            </h2>
-            <p className="text-sm text-gray-600">
-              Hotel: {orderData?.hotelName || 'Loading...'}
-            </p>
+          <div className="group relative rounded-2xl p-5 backdrop-blur-sm bg-white/80 border border-white/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-amber-100/50 to-orange-100/50"></div>
+            <div className="relative z-10">
+              <div className="flex items-center">
+                <Icons.Clock className="w-8 h-8 text-yellow-600 mr-3" />
+                <div>
+                  <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{stats.pendingPayments}</div>
+                  <div className="text-sm font-medium text-gray-600">Pending Payments</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="group relative rounded-2xl p-5 backdrop-blur-sm bg-white/80 border border-white/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-emerald-100/50 to-teal-100/50"></div>
+            <div className="relative z-10">
+              <div className="flex items-center">
+                <Icons.DollarSign className="w-8 h-8 text-green-600 mr-3" />
+                <div>
+                  <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">₹{stats.totalRevenue.toFixed(2)}</div>
+                  <div className="text-sm font-medium text-gray-600">Total Revenue</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="group relative rounded-2xl p-5 backdrop-blur-sm bg-white/80 border border-white/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden">
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-purple-100/50 to-pink-100/50"></div>
+            <div className="relative z-10">
+              <div className="flex items-center">
+                <Icons.Receipt className="w-8 h-8 text-purple-600 mr-3" />
+                <div>
+                  <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{stats.completedOrders}</div>
+                  <div className="text-sm font-medium text-gray-600">Completed Orders</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        
-        {filteredOrders.length === 0 ? (
-          <div className="text-center py-12">
-            <Icons.ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No {activeTab === 'ongoing' ? 'Ongoing' : activeTab === 'completed' ? 'Completed' : ''} Orders
-            </h3>
-            <p className="text-gray-500">
-              {activeTab === 'ongoing' 
-                ? 'No orders are currently ongoing'
-                : activeTab === 'completed'
-                ? 'No orders have been completed yet'
-                : 'No orders found'}
-            </p>
+
+        {/* Tab Navigation */}
+        <div className="flex space-x-2 bg-white/80 backdrop-blur-sm p-1.5 rounded-2xl border border-white/50 shadow-lg">
+          <button
+            onClick={() => setActiveTab('ongoing')}
+            className={`px-5 py-3 rounded-xl font-medium transition-all duration-300 ${activeTab === 'ongoing'
+              ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg scale-105'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+              }`}
+          >
+            Ongoing ({stats.ongoingOrders})
+          </button>
+          <button
+            onClick={() => setActiveTab('completed')}
+            className={`px-5 py-3 rounded-xl font-medium transition-all duration-300 ${activeTab === 'completed'
+              ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg scale-105'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+              }`}
+          >
+            Completed ({stats.completedOrders})
+          </button>
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-5 py-3 rounded-xl font-medium transition-all duration-300 ${activeTab === 'all'
+              ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg scale-105'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+              }`}
+          >
+            All Orders ({stats.totalOrders})
+          </button>
+        </div>
+
+        {/* Orders Table */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                {activeTab === 'ongoing' ? 'Ongoing Orders' :
+                  activeTab === 'completed' ? 'Completed Orders' : 'All Orders'}
+              </h2>
+              <p className="text-sm text-gray-600 font-medium">
+                Hotel: {orderData?.hotelName || 'Loading...'}
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredOrders.map((order) => (
-                  <tr key={order.orderId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      <div>
-                        <div className="font-mono text-xs text-gray-600 mb-1">{order.orderId}</div>
-                        <div className="text-xs text-gray-500">Waiter: {order.waiterAssigned}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="font-semibold text-lg">{order.tableId}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div>{order.orderedItems?.length || 0} items</div>
-                      <div className="text-xs text-gray-500">
-                        {order.orderedItems?.slice(0, 2).map(item => item.itemName).join(', ')}
-                        {order.orderedItems?.length > 2 && '...'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="font-semibold">₹{order.billDetails?.grandTotal?.toFixed(2) || '0.00'}</div>
-                      <div className="text-xs text-gray-500">
-                        Subtotal: ₹{order.billDetails?.subtotal || 0}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        order.orderStatus === 'COMPLETED'
+
+          {filteredOrders.length === 0 ? (
+            <div className="text-center py-12">
+              <Icons.ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No {activeTab === 'ongoing' ? 'Ongoing' : activeTab === 'completed' ? 'Completed' : ''} Orders
+              </h3>
+              <p className="text-gray-500">
+                {activeTab === 'ongoing'
+                  ? 'No orders are currently ongoing'
+                  : activeTab === 'completed'
+                    ? 'No orders have been completed yet'
+                    : 'No orders found'}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredOrders.map((order) => (
+                    <tr key={order.orderId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <div>
+                          <div className="font-mono text-xs text-gray-600 mb-1">{order.orderId}</div>
+                          <div className="text-xs text-gray-500">Waiter: {order.waiterAssigned}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="font-semibold text-lg">{order.tableId}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>{order.orderedItems?.length || 0} items</div>
+                        <div className="text-xs text-gray-500">
+                          {order.orderedItems?.slice(0, 2).map(item => item.itemName).join(', ')}
+                          {order.orderedItems?.length > 2 && '...'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="font-semibold">₹{order.billDetails?.grandTotal?.toFixed(2) || '0.00'}</div>
+                        <div className="text-xs text-gray-500">
+                          Subtotal: ₹{order.billDetails?.subtotal || 0}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${order.orderStatus === 'COMPLETED'
                           ? 'bg-green-100 text-green-800'
                           : order.orderStatus === 'ONGOING'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {order.orderStatus}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full inline-block ${
-                          order.billDetails?.paymentStatus === 'PAID'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-gray-100 text-gray-800'
+                          }`}>
+                          {order.orderStatus}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full inline-block ${order.billDetails?.paymentStatus === 'PAID'
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
-                        }`}>
-                          {order.billDetails?.paymentStatus || 'PENDING'}
-                        </span>
-                        {order.billDetails?.paymentMethod && (
-                          <span className="text-xs text-gray-500 mt-1">
-                            {order.billDetails.paymentMethod}
+                            }`}>
+                            {order.billDetails?.paymentStatus || 'PENDING'}
                           </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div>
-                        <div className="text-xs">Placed: {new Date(order.orderTime.placedAt).toLocaleTimeString()}</div>
-                        {order.orderTime.completedAt && (
-                          <div className="text-xs text-green-600">Completed: {new Date(order.orderTime.completedAt).toLocaleTimeString()}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => {
-                          setSelectedOrder(order)
-                          setShowOrderDetails(true)
-                        }}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        View Details
-                      </button>
-                      {order.billDetails?.paymentStatus === 'PENDING' && (
+                          {order.billDetails?.paymentMethod && (
+                            <span className="text-xs text-gray-500 mt-1">
+                              {order.billDetails.paymentMethod}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>
+                          <div className="text-xs">Placed: {new Date(order.orderTime.placedAt).toLocaleTimeString()}</div>
+                          {order.orderTime.completedAt && (
+                            <div className="text-xs text-green-600">Completed: {new Date(order.orderTime.completedAt).toLocaleTimeString()}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => {
                             setSelectedOrder(order)
                             setShowOrderDetails(true)
                           }}
-                          className="text-green-600 hover:text-green-900"
+                          className="text-blue-600 hover:text-blue-900 mr-3"
                         >
-                          Update Payment
+                          View Details
                         </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        {order.billDetails?.paymentStatus === 'PENDING' && (
+                          <button
+                            onClick={() => {
+                              setSelectedOrder(order)
+                              setShowOrderDetails(true)
+                            }}
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            Update Payment
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Order Details Modal */}
+        {showOrderDetails && selectedOrder && (
+          <OrderDetailsModal
+            order={selectedOrder}
+            onClose={() => {
+              setShowOrderDetails(false)
+              setSelectedOrder(null)
+            }}
+            onUpdateBilling={handleUpdateBilling}
+            onUpdateOrder={handleUpdateOrder}
+          />
         )}
       </div>
-
-      {/* Order Details Modal */}
-      {showOrderDetails && selectedOrder && (
-        <OrderDetailsModal
-          order={selectedOrder}
-          onClose={() => {
-            setShowOrderDetails(false)
-            setSelectedOrder(null)
-          }}
-          onUpdateBilling={handleUpdateBilling}
-          onUpdateOrder={handleUpdateOrder}
-        />
-      )}
     </div>
   )
 }
