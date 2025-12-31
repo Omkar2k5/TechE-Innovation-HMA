@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../auth/AuthContext"
+import hotelLobbyImage from "../../assets/hotel-lobby.png"
 
 const LoginPage = () => {
   const { signIn, error, clearError } = useAuth()
@@ -23,7 +24,7 @@ const LoginPage = () => {
     try {
       const response = await signIn({ hotelId, email, password, role })
       const features = response.user?.features || {}
-      
+
       // For cook role - check if they have any features
       if (role === 'cook') {
         if (!features.dashboard) {
@@ -34,7 +35,7 @@ const LoginPage = () => {
         navigate('/cook')
         return
       }
-      
+
       // For receptionist - redirect to first available feature
       if (role === 'receptionist') {
         if (features.dashboard !== false) {
@@ -52,13 +53,13 @@ const LoginPage = () => {
         }
         return
       }
-      
+
       // For owner - redirect to first available feature
       if (role === 'owner') {
         navigate('/owner')
         return
       }
-      
+
       // Default fallback
       navigate(`/${role}`)
     } catch (err) {
@@ -69,73 +70,102 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow p-6">
-        <h1 className="text-xl font-semibold text-slate-800 mb-4">Sign in</h1>
-        
-        {/* Error Display */}
-        {(loginError || error) && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-            {loginError || error}
-          </div>
-        )}
-        
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm text-slate-600 mb-1">Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
-            >
-              <option value="receptionist">Receptionist</option>
-              <option value="cook">Cook</option>
-              <option value="manager">Manager</option>
-              <option value="owner">Owner</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-slate-600 mb-1">HOTEL ID</label>
-            <input
-              value={hotelId}
-              onChange={(e) => setHotelId(e.target.value)}
-              className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-600 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-600 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border-slate-300 focus:border-slate-500 focus:ring-slate-500"
-            />
-          </div>
-          <button
-            disabled={loading || !hotelId || !email || !password}
-            className="w-full px-4 py-2 rounded-md bg-slate-800 text-white disabled:opacity-50"
-          >
-            {loading ? "Signing In…" : "Sign In"}
-          </button>
-        </form>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundColor: '#E8E4DD' }}>
+      {/* Main Card Container */}
+      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col lg:flex-row">
 
-        {/* Forgot Password Link */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => navigate("/forgot-password")}
-            className="text-slate-600 hover:text-slate-800 text-sm font-medium transition-colors"
-          >
-            Forgot your password?
-          </button>
+        {/* Left Side - Illustration */}
+        <div className="lg:w-1/2 relative">
+          <img
+            src={hotelLobbyImage}
+            alt="Hotel Lobby Illustration"
+            className="w-full h-full object-cover min-h-[300px] lg:min-h-full"
+          />
+        </div>
+
+        {/* Right Side - Login Form */}
+        <div className="lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
+          {/* Title */}
+          <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-8">
+            Hotel System Login
+          </h1>
+
+          {/* Error Display */}
+          {(loginError || error) && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm mb-4">
+              {loginError || error}
+            </div>
+          )}
+
+          {/* Login Form */}
+          <form onSubmit={onSubmit} className="space-y-4">
+            {/* Role Selector */}
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Role</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="receptionist">Receptionist</option>
+                <option value="cook">Cook</option>
+                <option value="manager">Manager</option>
+                <option value="owner">Owner</option>
+              </select>
+            </div>
+
+            {/* Hotel ID */}
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">HOTEL ID</label>
+              <input
+                type="text"
+                value={hotelId}
+                onChange={(e) => setHotelId(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading || !hotelId || !email || !password}
+              className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? "Signing In…" : "Sign In"}
+            </button>
+          </form>
+
+          {/* Forgot Password Link */}
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => navigate("/forgot-password")}
+              className="text-gray-500 hover:text-blue-600 text-sm font-medium transition-colors"
+            >
+              Forgot your password?
+            </button>
+          </div>
         </div>
       </div>
     </div>

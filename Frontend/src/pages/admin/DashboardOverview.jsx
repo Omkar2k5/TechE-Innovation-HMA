@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
-export default function DashboardOverview(){
+export default function DashboardOverview() {
   const [range, setRange] = useState('today')
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -22,7 +22,7 @@ export default function DashboardOverview(){
         `http://localhost:5000/api/analytics/dashboard?range=${range}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      
+
       if (response.data.success) {
         setAnalytics(response.data.data)
         setError(null)
@@ -83,7 +83,7 @@ export default function DashboardOverview(){
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
           <p className="text-red-800 font-medium">⚠️ {error}</p>
-          <button 
+          <button
             onClick={fetchAnalytics}
             className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
@@ -109,10 +109,10 @@ export default function DashboardOverview(){
           <p className="text-sm text-slate-500 mt-1">Real-time analytics and performance metrics</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={()=>setRange('today')} className={`px-3 py-1 rounded ${range==='today' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}>Today</button>
-          <button onClick={()=>setRange('7d')} className={`px-3 py-1 rounded ${range==='7d' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}>7 Days</button>
-          <button onClick={()=>setRange('30d')} className={`px-3 py-1 rounded ${range==='30d' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}>30 Days</button>
-          <button 
+          <button onClick={() => setRange('today')} className={`px-3 py-1 rounded ${range === 'today' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}>Today</button>
+          <button onClick={() => setRange('7d')} className={`px-3 py-1 rounded ${range === '7d' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}>7 Days</button>
+          <button onClick={() => setRange('30d')} className={`px-3 py-1 rounded ${range === '30d' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-600 hover:bg-slate-100'}`}>30 Days</button>
+          <button
             onClick={fetchAnalytics}
             className="ml-2 px-3 py-1 rounded text-slate-600 hover:bg-slate-100"
             title="Refresh"
@@ -222,18 +222,17 @@ export default function DashboardOverview(){
           <h2 className="text-lg font-semibold">Live Table Overview</h2>
           <span className="text-xs text-slate-500">Real-time status and order timers</span>
         </div>
-        
+
         {tables.details && tables.details.length > 0 ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,200px))] gap-4 justify-start">
             {tables.details.map((table) => (
-              <div 
-                key={table.tableId} 
-                className={`border rounded-lg p-4 w-[200px] h-[180px] flex flex-col ${
-                  table.status === 'OCCUPIED' ? 'border-red-300 bg-red-50' :
-                  table.status === 'RESERVED' ? 'border-blue-300 bg-blue-50' :
-                  table.status === 'MAINTENANCE' ? 'border-gray-300 bg-gray-50' :
-                  'border-green-300 bg-green-50'
-                }`}
+              <div
+                key={table.tableId}
+                className={`border rounded-lg p-4 w-[200px] h-[180px] flex flex-col ${table.status === 'OCCUPIED' ? 'border-red-300 bg-red-50' :
+                    table.status === 'RESERVED' ? 'border-blue-300 bg-blue-50' :
+                      table.status === 'MAINTENANCE' ? 'border-gray-300 bg-gray-50' :
+                        'border-green-300 bg-green-50'
+                  }`}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="min-w-0">
@@ -242,9 +241,9 @@ export default function DashboardOverview(){
                   </div>
                   <div className={`w-3 h-3 rounded-full flex-shrink-0 ${getStatusColor(table.status)}`}></div>
                 </div>
-                
+
                 <div className="text-xs font-medium mb-2">{table.status}</div>
-                
+
                 {table.orderTimer && (
                   <div className="mt-auto pt-3 border-t border-slate-200">
                     <div className="text-xs text-slate-600 mb-1">Active Order</div>
@@ -256,7 +255,7 @@ export default function DashboardOverview(){
                     </div>
                   </div>
                 )}
-                
+
                 {!table.orderTimer && table.status === 'OCCUPIED' && (
                   <div className="mt-auto pt-3 border-t border-slate-200 text-xs text-slate-500">
                     No active order
