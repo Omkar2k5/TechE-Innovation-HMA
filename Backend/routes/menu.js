@@ -18,11 +18,11 @@ router.get('/', protect, authorize('receptionist', 'manager', 'owner'), async (r
 
     if (!menuDocument) {
       console.log('📝 No menu document found for hotel:', hotelId, '- Creating new one');
-      
+
       // Get hotel information to create menu document
       const Hotel = (await import('../models/Hotel.js')).default;
       const hotel = await Hotel.findById(hotelId);
-      
+
       if (!hotel) {
         console.log('❌ Hotel not found:', hotelId);
         return res.status(404).json({
@@ -50,7 +50,7 @@ router.get('/', protect, authorize('receptionist', 'manager', 'owner'), async (r
           showAllergens: true
         }
       });
-      
+
       await menuDocument.save();
       console.log('✅ Created new menu document for hotel:', hotel.name);
     }
@@ -66,7 +66,7 @@ router.get('/', protect, authorize('receptionist', 'manager', 'owner'), async (r
         return acc;
       }, {}),
       totalIngredients: menuDocument.savedIngredients.length,
-      averagePrice: menuDocument.menuItems.length > 0 
+      averagePrice: menuDocument.menuItems.length > 0
         ? Math.round((menuDocument.menuItems.reduce((sum, item) => sum + (item.price || 0), 0) / menuDocument.menuItems.length) * 100) / 100
         : 0
     };
@@ -128,7 +128,7 @@ router.post('/items', protect, authorize('receptionist', 'manager', 'owner'), as
       // If no menu document exists, create one first
       const Hotel = (await import('../models/Hotel.js')).default;
       const hotel = await Hotel.findById(hotelId);
-      
+
       if (!hotel) {
         return res.status(404).json({
           success: false,
@@ -146,12 +146,12 @@ router.post('/items', protect, authorize('receptionist', 'manager', 'owner'), as
     }
 
     // Generate unique item ID
-    const itemId = menuDocument.menuSettings.autoGenerateItemId 
+    const itemId = menuDocument.menuSettings.autoGenerateItemId
       ? `MENU_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       : `ITEM_${menuDocument.menuItems.length + 1}`;
 
     // Check if item with same name already exists
-    const existingItem = menuDocument.menuItems.find(item => 
+    const existingItem = menuDocument.menuItems.find(item =>
       item.name.toLowerCase() === name.toLowerCase()
     );
 
@@ -182,8 +182,8 @@ router.post('/items', protect, authorize('receptionist', 'manager', 'owner'), as
     menuDocument.menuItems.push(newMenuItem);
 
     // Update saved ingredients
-    const newIngredients = newMenuItem.ingredients.filter(ing => 
-      !menuDocument.savedIngredients.some(saved => 
+    const newIngredients = newMenuItem.ingredients.filter(ing =>
+      !menuDocument.savedIngredients.some(saved =>
         saved.name.toLowerCase() === ing.toLowerCase()
       )
     );
@@ -254,7 +254,7 @@ router.put('/items/:itemId', protect, authorize('receptionist', 'manager', 'owne
 
     // Check if new name conflicts with existing items (excluding current item)
     if (name && name.trim()) {
-      const nameConflict = menuDocument.menuItems.find((item, index) => 
+      const nameConflict = menuDocument.menuItems.find((item, index) =>
         index !== itemIndex && item.name.toLowerCase() === name.toLowerCase()
       );
 
@@ -268,15 +268,15 @@ router.put('/items/:itemId', protect, authorize('receptionist', 'manager', 'owne
 
     // Update the menu item
     const menuItem = menuDocument.menuItems[itemIndex];
-    
+
     if (name !== undefined) menuItem.name = name.trim();
     if (description !== undefined) menuItem.description = description.trim();
     if (ingredients !== undefined) {
       menuItem.ingredients = ingredients.filter(ing => ing && ing.trim()).map(ing => ing.trim());
-      
+
       // Update saved ingredients
-      const newIngredients = menuItem.ingredients.filter(ing => 
-        !menuDocument.savedIngredients.some(saved => 
+      const newIngredients = menuItem.ingredients.filter(ing =>
+        !menuDocument.savedIngredients.some(saved =>
           saved.name.toLowerCase() === ing.toLowerCase()
         )
       );
@@ -295,7 +295,7 @@ router.put('/items/:itemId', protect, authorize('receptionist', 'manager', 'owne
     if (allergens !== undefined) menuItem.allergens = allergens;
     if (nutritionalInfo !== undefined) menuItem.nutritionalInfo = nutritionalInfo;
     if (isAvailable !== undefined) menuItem.isAvailable = isAvailable;
-    
+
     menuItem.updatedAt = new Date();
 
     // Save the document
@@ -447,7 +447,7 @@ router.delete('/ingredients/:ingredientName', protect, authorize('receptionist',
     }
 
     // Find and remove the ingredient
-    const ingredientIndex = menuDocument.savedIngredients.findIndex(ing => 
+    const ingredientIndex = menuDocument.savedIngredients.findIndex(ing =>
       ing.name.toLowerCase() === ingredientName.toLowerCase()
     );
 
@@ -490,10 +490,12 @@ router.delete('/ingredients/:ingredientName', protect, authorize('receptionist',
 // @access  Private (Manager, Owner)
 router.post('/ingredients', protect, authorize('manager', 'owner'), async (req, res) => {
   try {
-    const { name, category, stock, unit } = req.body;
+    const { name, category, stock, unit, costPerUnit, supplier, lowStockThreshold } = req.body;
     const hotelId = req.user.hotelId;
 
-    console.log('➕ Adding ingredient with stock:', { hotelId, name, stock, unit });
+    console.log('➕ Adding ingredient with all fields:', {
+      hotelId, name, category, stock, unit, costPerUnit, supplier, lowStockThreshold
+    });
 
     if (!name || !name.trim()) {
       return res.status(400).json({
@@ -508,7 +510,7 @@ router.post('/ingredients', protect, authorize('manager', 'owner'), async (req, 
     if (!menuDocument) {
       const Hotel = (await import('../models/Hotel.js')).default;
       const hotel = await Hotel.findById(hotelId);
-      
+
       if (!hotel) {
         return res.status(404).json({
           success: false,
@@ -526,7 +528,7 @@ router.post('/ingredients', protect, authorize('manager', 'owner'), async (req, 
     }
 
     // Check if ingredient already exists
-    const existing = menuDocument.savedIngredients.find(ing => 
+    const existing = menuDocument.savedIngredients.find(ing =>
       ing.name.toLowerCase() === name.toLowerCase()
     );
 
@@ -543,6 +545,9 @@ router.post('/ingredients', protect, authorize('manager', 'owner'), async (req, 
       category: category || 'other',
       stock: stock || 0,
       unit: unit || 'grams',
+      costPerUnit: costPerUnit || 0,
+      supplier: supplier || '',
+      lowStockThreshold: lowStockThreshold || 5,
       isActive: true
     };
 
@@ -590,7 +595,7 @@ router.put('/ingredients/:ingredientName/stock', protect, authorize('manager', '
       });
     }
 
-    const ingredient = menuDocument.savedIngredients.find(ing => 
+    const ingredient = menuDocument.savedIngredients.find(ing =>
       ing.name.toLowerCase() === ingredientName.toLowerCase()
     );
 

@@ -57,7 +57,7 @@ const menuItemSchema = new Schema({
   }
 }, { _id: true });
 
-// Sub-schema for saved ingredients (for reuse across menu items)
+// Sub-schema for saved ingredients (for reuse across menu items and inventory management)
 const savedIngredientSchema = new Schema({
   name: {
     type: String,
@@ -68,6 +68,31 @@ const savedIngredientSchema = new Schema({
     type: String,
     enum: ['vegetable', 'meat', 'dairy', 'grain', 'spice', 'sauce', 'other'],
     default: 'other'
+  },
+  stock: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  unit: {
+    type: String,
+    enum: ['grams', 'kg', 'ml', 'liters', 'pcs', 'cups', 'tbsp', 'tsp', 'pieces'],
+    default: 'grams'
+  },
+  costPerUnit: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  supplier: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  lowStockThreshold: {
+    type: Number,
+    default: 5,
+    min: 0
   },
   isActive: {
     type: Boolean,
@@ -109,7 +134,7 @@ const menuSchema = new Schema({
 });
 
 // Update lastUpdated on save
-menuSchema.pre('save', function(next) {
+menuSchema.pre('save', function (next) {
   this.lastUpdated = new Date();
   next();
 });
