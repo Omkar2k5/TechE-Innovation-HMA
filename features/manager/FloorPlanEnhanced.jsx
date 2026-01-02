@@ -68,7 +68,6 @@ const TableCard = ({ table, onPress, onLongPress, onTakeOrder }) => {
 // Uses backend API to get exact timer data for perfect synchronization
 const ItemTimer = ({ item, orderStartTime, timerUpdate, orderId, itemIndex }) => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
-  const [syncedStartTime, setSyncedStartTime] = useState(null)
 
   // Only show timer if cooking has started and item is not ready
   const isCooking = item.status === 'in_progress' || item.status === 'PREPARING'
@@ -78,7 +77,6 @@ const ItemTimer = ({ item, orderStartTime, timerUpdate, orderId, itemIndex }) =>
   useEffect(() => {
     if (!shouldShowTimer || !orderId || itemIndex === undefined) {
       setElapsedSeconds(0)
-      setSyncedStartTime(null)
       return
     }
 
@@ -87,21 +85,11 @@ const ItemTimer = ({ item, orderStartTime, timerUpdate, orderId, itemIndex }) =>
         const response = await api.orders.getTimers()
         if (response && response.success && response.data.timers[orderId] && response.data.timers[orderId][itemIndex]) {
           const timerInfo = response.data.timers[orderId][itemIndex]
-          setSyncedStartTime(timerInfo.startTime)
-        } else {
-          // Fallback to item's startedAt if no synchronized timer data
-          if (item.startedAt) {
-            const time = new Date(item.startedAt).getTime()
-            if (!isNaN(time)) setSyncedStartTime(time)
-          }
+          // Use server-calculated elapsed seconds directly (no client-side calculation)
+          setElapsedSeconds(timerInfo.elapsedSeconds)
         }
       } catch (error) {
         console.error("Error fetching timer data:", error)
-        // Fallback to item's startedAt
-        if (item.startedAt) {
-          const time = new Date(item.startedAt).getTime()
-          if (!isNaN(time)) setSyncedStartTime(time)
-        }
       }
     }
 
@@ -112,29 +100,7 @@ const ItemTimer = ({ item, orderStartTime, timerUpdate, orderId, itemIndex }) =>
     const interval = setInterval(fetchTimerData, 1000)
 
     return () => clearInterval(interval)
-  }, [shouldShowTimer, timerUpdate, item.startedAt, item.status, orderId, itemIndex])
-
-  // Calculate elapsed time using synchronized start time
-  useEffect(() => {
-    if (!shouldShowTimer || !syncedStartTime) {
-      setElapsedSeconds(0)
-      return
-    }
-
-    const calculateElapsed = () => {
-      const now = Date.now()
-      const elapsed = Math.floor((now - syncedStartTime) / 1000)
-      return Math.max(0, elapsed)
-    }
-
-    setElapsedSeconds(calculateElapsed())
-
-    const interval = setInterval(() => {
-      setElapsedSeconds(calculateElapsed())
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [shouldShowTimer, syncedStartTime])
+  }, [shouldShowTimer, timerUpdate, item.status, orderId, itemIndex])
 
   if (!shouldShowTimer) {
     if (item.status === 'READY') {
