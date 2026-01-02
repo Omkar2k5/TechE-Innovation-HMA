@@ -11,10 +11,6 @@ import billRoutes from './routes/bills.js';
 import reservationRoutes from './routes/reservations.js';
 import analyticsRoutes from './routes/analytics.js';
 
-// In-memory timer storage for synchronized cooking timers
-// Structure: { orderId: { itemIndex: { startTime: timestamp, status: 'PREPARING' } } }
-global.cookingTimers = new Map();
-
 // Load environment variables
 dotenv.config();
 
@@ -65,7 +61,7 @@ app.get('/api/health', async (req, res) => {
   try {
     const mongoose = await import('mongoose');
     const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
-
+    
     res.json({
       success: true,
       message: 'API Health Check',
@@ -85,7 +81,7 @@ app.get('/api/health', async (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err);
-
+  
   res.status(500).json({
     success: false,
     message: 'Something went wrong!',
