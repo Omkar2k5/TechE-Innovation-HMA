@@ -7,6 +7,65 @@ import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// @desc    Get synchronized timer data for orders
+// @route   GET /api/orders/timers
+// @access  Private (Cook, Manager, Owner, Receptionist)
+router.get('/timers', protect, authorize('cook', 'manager', 'owner', 'receptionist'), async (req, res) => {
+  try {
+    const hotelId = req.user.hotelId;
+
+    console.log('⏱️ Fetching synchronized timers for hotel:', hotelId);
+
+    // Find order document for hotel ID
+    let orderDocument = await Order.findById(hotelId);
+
+    if (!orderDocument) {
+      return res.status(200).json({
+        success: true,
+        message: 'No orders found',
+        data: {
+          timers: {},
+          serverTime: Date.now()
+        }
+      });
+    }
+
+    // Build timer response with current server time for synchronization
+    const timerData = {};
+
+    // Add in-memory timer data
+    for (const [orderId, itemTimers] of global.cookingTimers.entries()) {
+      timerData[orderId] = {};
+      for (const [itemIndex, timerInfo] of itemTimers.entries()) {
+        timerData[orderId][itemIndex] = {
+          startTime: timerInfo.startTime,
+          status: timerInfo.status,
+          elapsedSeconds: Math.floor((Date.now() - timerInfo.startTime) / 1000)
+        };
+      }
+    }
+
+    console.log('✅ Timer data retrieved:', Object.keys(timerData).length, 'orders with active timers');
+
+    res.status(200).json({
+      success: true,
+      message: 'Timer data retrieved successfully',
+      data: {
+        timers: timerData,
+        serverTime: Date.now() // For client synchronization
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Get Timer Data Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred while fetching timer data',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
 // @desc    Get orders for cook dashboard (kitchen view)
 // @route   GET /api/orders/kitchen
 // @access  Private (Cook, Manager, Owner)
@@ -36,7 +95,7 @@ router.get('/kitchen', protect, authorize('cook', 'manager', 'owner'), async (re
     }
 
     // Filter active orders (not served or cancelled)
-    const activeOrders = orderDocument.orders.filter(order => 
+    const activeOrders = orderDocument.orders.filter(order =>
       ['PENDING', 'PREPARING', 'READY'].includes(order.orderStatus) && order.isActive
     );
 
@@ -83,11 +142,11 @@ router.get('/', protect, authorize('receptionist', 'manager', 'owner'), async (r
 
     if (!orderDocument) {
       console.log('📝 No order document found for hotel:', hotelId, '- Creating new one');
-      
+
       // Get hotel information to create order document
       const Hotel = (await import('../models/Hotel.js')).default;
       const hotel = await Hotel.findById(hotelId);
-      
+
       if (!hotel) {
         console.log('❌ Hotel not found:', hotelId);
         return res.status(404).json({
@@ -103,7 +162,7 @@ router.get('/', protect, authorize('receptionist', 'manager', 'owner'), async (r
         orders: [],
         isActive: true
       });
-      
+
       await orderDocument.save();
       console.log('✅ Created new order document for hotel:', hotel.name);
     }
@@ -116,7 +175,7 @@ router.get('/', protect, authorize('receptionist', 'manager', 'owner'), async (r
     const readyOrders = orderDocument.orders.filter(order => order.orderStatus === 'READY');
     const servedOrders = orderDocument.orders.filter(order => order.orderStatus === 'SERVED');
     const completedOrders = orderDocument.orders.filter(order => order.orderStatus === 'COMPLETED');
-    
+
     const orderStats = {
       totalOrders: orderDocument.orders.length,
       pendingOrders: pendingOrders.length,
@@ -181,7 +240,7 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
     // Get hotel information
     const Hotel = (await import('../models/Hotel.js')).default;
     const hotel = await Hotel.findById(hotelId);
-    
+
     if (!hotel) {
       return res.status(404).json({
         success: false,
@@ -191,7 +250,7 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
 
     // Get menu document to fetch preparation times
     const menuDocument = await Menu.findById(hotelId);
-    
+
     if (!menuDocument) {
       return res.status(404).json({
         success: false,
@@ -224,32 +283,32 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
     // Check if there's an existing unpaid bill for this table
     // If the last bill for this table is PAID, create new order/bill (new customer)
     // Otherwise, append items to existing order/bill
-    
+
     // Filter all bills for this table that are NOT paid
-    const unpaidTableBills = billDocument.bills.filter(b => 
-      b.tableId === tableId && 
-      b.isActive && 
+    const unpaidTableBills = billDocument.bills.filter(b =>
+      b.tableId === tableId &&
+      b.isActive &&
       b.paymentDetails?.paymentStatus !== 'PAID'
     );
-    
+
     console.log(`🔍 Checking table ${tableId} for existing unpaid bills...`);
     console.log(`📊 Found ${unpaidTableBills.length} unpaid bills for table ${tableId}`);
-    
+
     let shouldCreateNew = true;
     let existingOrder = null;
     let existingBill = null;
-    
+
     if (unpaidTableBills.length > 0) {
       // Get the most recent unpaid bill
       const lastUnpaidBill = unpaidTableBills[unpaidTableBills.length - 1];
       console.log(`📝 Found unpaid bill ${lastUnpaidBill.billId} for table ${tableId} with status: ${lastUnpaidBill.paymentDetails?.paymentStatus}`);
       console.log(`➡️ Appending items to existing order/bill instead of creating new`);
-      
+
       shouldCreateNew = false;
       // Find the corresponding order
       existingOrder = orderDocument.orders.find(o => o.billId === lastUnpaidBill.billId);
       existingBill = lastUnpaidBill;
-      
+
       if (!existingOrder) {
         console.warn(`⚠️ Could not find order for bill ${lastUnpaidBill.billId}`);
         shouldCreateNew = true; // Fallback to creating new if order not found
@@ -262,11 +321,11 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
     // Process items for order (kitchen-focused)
     const orderItems = [];
     let totalEstimatedTime = 0;
-    
+
     // Process items for bill (payment-focused)
     const billItems = [];
     let subtotal = 0;
-    
+
     for (const item of items) {
       if (!item.menuItemId || !item.name || !item.quantity || !item.unitPrice) {
         return res.status(400).json({
@@ -278,14 +337,14 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
       // Find menu item to get preparation time
       const menuItem = menuDocument.menuItems.find(mi => mi._id.toString() === item.menuItemId);
       const prepTime = menuItem?.avgPrepTimeMins || menuDocument.menuSettings?.defaultPreparationTime || 15;
-      
+
       if (prepTime > totalEstimatedTime) {
         totalEstimatedTime = prepTime;
       }
 
       const totalPrice = item.quantity * item.unitPrice;
       subtotal += totalPrice;
-      
+
       // Add to order items (kitchen)
       orderItems.push({
         menuItemId: item.menuItemId,
@@ -406,7 +465,7 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
 
       // Append new items to existing order
       existingOrder.orderedItems.push(...orderItems);
-      
+
       // Update estimated completion time if new items take longer
       const currentEstimate = new Date(existingOrder.estimatedCompletionTime);
       const newEstimate = new Date();
@@ -422,13 +481,13 @@ router.post('/', protect, authorize('receptionist', 'manager', 'owner'), async (
 
       // Append new items to existing bill
       existingBill.items.push(...billItems);
-      
+
       // Recalculate bill totals
       const newSubtotal = existingBill.paymentDetails.subtotal + subtotal;
       const newTax = newSubtotal * 0.05;
       const newServiceCharge = newSubtotal * 0.02;
       const newGrandTotal = newSubtotal + newTax + newServiceCharge - existingBill.paymentDetails.discount;
-      
+
       existingBill.paymentDetails.subtotal = newSubtotal;
       existingBill.paymentDetails.tax = newTax;
       existingBill.paymentDetails.serviceCharge = newServiceCharge;
@@ -607,27 +666,40 @@ router.put('/:orderId/items/:itemIndex', protect, authorize('cook', 'manager', '
     // Update item status
     item.status = status;
 
-    // CRITICAL: Always set startedAt when status changes to PREPARING (even if already set)
-    // This ensures timer starts fresh when cook presses "Start Cooking" for individual items
-    // The timestamp must be set at the EXACT moment the cook presses the button, not earlier
-    // IMPORTANT: Only update if status is changing TO PREPARING (not if already PREPARING)
+    // SYNCHRONIZED TIMER LOGIC - Runtime only, no DB storage
     if (status === 'PREPARING') {
-      // CRITICAL: Always create a FRESH timestamp when cook presses "Start Cooking"
-      // This overwrites any previous timestamp (from when order was first started)
-      // This ensures timer starts from 0:00 when cook presses "Start Cooking" for THIS item
+      // Create fresh timestamp for synchronized timer
       const freshTimestamp = new Date();
       item.startedAt = freshTimestamp;
-      console.log(`⏱️ Item ${idx} (${item.itemName || 'item'}) startedAt RESET to: ${freshTimestamp.toISOString()}`);
-      console.log(`   Previous timestamp was: ${item.startedAt ? 'exists' : 'null'}`);
-    }
 
-    if (status === 'READY' && !item.completedAt) {
+      // Store in in-memory timer for synchronization
+      if (!global.cookingTimers.has(orderId)) {
+        global.cookingTimers.set(orderId, new Map());
+      }
+      global.cookingTimers.get(orderId).set(idx, {
+        startTime: freshTimestamp.getTime(),
+        status: 'PREPARING'
+      });
+
+      console.log(`⏱️ SYNCHRONIZED TIMER: Item ${idx} (${item.itemName}) started at: ${freshTimestamp.toISOString()}`);
+    } else if (status === 'READY') {
+      // Stop timer and mark completion
       item.completedAt = new Date();
+
+      // Remove from in-memory timer
+      if (global.cookingTimers.has(orderId)) {
+        global.cookingTimers.get(orderId).delete(idx);
+        if (global.cookingTimers.get(orderId).size === 0) {
+          global.cookingTimers.delete(orderId);
+        }
+      }
+
+      console.log(`✅ TIMER STOPPED: Item ${idx} (${item.itemName}) completed`);
     }
 
     // Check if all items are ready
     const allReady = order.orderedItems.every(i => i.status === 'READY' || i.status === 'SERVED');
-    
+
     if (allReady) {
       order.orderStatus = 'READY';
       if (!order.orderTime.allItemsReadyAt) {
@@ -696,22 +768,22 @@ router.put('/:orderId', protect, authorize('receptionist', 'manager', 'owner'), 
     // Update the order status
     const order = orderDocument.orders[orderIndex];
     const oldStatus = order.orderStatus;
-    
+
     // Special handling for cancelled orders - delete them completely
     if (orderStatus === 'CANCELLED') {
       // Remove the order from the array
       const deletedOrder = orderDocument.orders[orderIndex];
       orderDocument.orders.splice(orderIndex, 1);
-      
+
       // Update document timestamps
       orderDocument.updatedAt = new Date();
-      
+
       // Save the document
       await orderDocument.save();
-      
+
       console.log(`🗑️ Order ${orderId} cancelled and deleted from database`);
       console.log(`📊 Remaining orders: ${orderDocument.orders.length}`);
-      
+
       res.status(200).json({
         success: true,
         message: 'Order cancelled and removed successfully',
@@ -724,20 +796,20 @@ router.put('/:orderId', protect, authorize('receptionist', 'manager', 'owner'), 
       });
       return;
     }
-    
+
     // For all other status updates, just update the status
     if (orderStatus !== undefined) {
       order.orderStatus = orderStatus;
-      
+
       // If marking as completed, set completion time
       if (orderStatus === 'COMPLETED' && completedAt) {
         order.orderTime.completedAt = new Date(completedAt);
       }
-      
+
       // Update isActive flag
       order.isActive = orderStatus === 'ONGOING';
     }
-    
+
     // Update document timestamps
     orderDocument.updatedAt = new Date();
 
@@ -798,15 +870,15 @@ router.put('/:orderId/billing', protect, authorize('receptionist', 'manager', 'o
 
     // Update the billing information
     const order = orderDocument.orders[orderIndex];
-    
+
     if (paymentStatus !== undefined) {
       order.billDetails.paymentStatus = paymentStatus;
     }
-    
+
     if (paymentMethod !== undefined) {
       order.billDetails.paymentMethod = paymentMethod;
     }
-    
+
     // Update bill details (subtotal, tax, grandTotal) if provided
     if (billDetails !== undefined) {
       if (billDetails.subtotal !== undefined) {
@@ -819,7 +891,7 @@ router.put('/:orderId/billing', protect, authorize('receptionist', 'manager', 'o
         order.billDetails.grandTotal = billDetails.grandTotal;
       }
     }
-    
+
     // Update document timestamps
     orderDocument.updatedAt = new Date();
 
@@ -985,19 +1057,19 @@ router.get('/table/:tableId/previous', protect, authorize('receptionist', 'manag
     const tableOrders = orderDocument.orders.filter(order => {
       // Match table ID (case-insensitive comparison)
       const matchesTable = String(order.tableId).trim().toUpperCase() === String(tableId).trim().toUpperCase();
-      
+
       // Check if order is active (default to true if undefined)
       const isActive = order.isActive !== false && order.isActive !== null;
-      
+
       // Check if order status is active (not served or cancelled)
       const isActiveStatus = ['PENDING', 'PREPARING', 'READY'].includes(order.orderStatus);
-      
+
       const shouldInclude = matchesTable && isActive && isActiveStatus;
-      
+
       if (shouldInclude) {
         console.log(`  ✅ Order ${order.orderId}: tableId=${order.tableId}, isActive=${isActive}, status=${order.orderStatus}`);
       }
-      
+
       return shouldInclude;
     });
 
@@ -1011,29 +1083,29 @@ router.get('/table/:tableId/previous', protect, authorize('receptionist', 'manag
         console.log(`  ✅ Including order ${order.orderId} - no bill document found`);
         return true;
       }
-      
+
       // If order doesn't have billId, include it (might be newly created)
       if (!order.billId) {
         console.log(`  ✅ Including order ${order.orderId} - no billId assigned`);
         return true;
       }
-      
+
       // Try to find the bill
       const bill = billDocument.bills.find(b => b.billId === order.billId);
-      
+
       // If bill not found, include the order (might be newly created, bill might not be saved yet)
       if (!bill) {
         console.log(`  ✅ Including order ${order.orderId} - bill ${order.billId} not found (newly created?)`);
         return true;
       }
-      
+
       // Check payment status - only exclude if explicitly PAID
       const paymentStatus = bill.paymentDetails?.paymentStatus;
       if (paymentStatus === 'PAID') {
         console.log(`  ❌ Excluding order ${order.orderId} - bill ${order.billId} is PAID`);
         return false;
       }
-      
+
       // Include order if payment status is PENDING, null, or any other status
       console.log(`  ✅ Including order ${order.orderId} - bill ${order.billId} status: ${paymentStatus || 'PENDING'}`);
       return true;
@@ -1041,12 +1113,36 @@ router.get('/table/:tableId/previous', protect, authorize('receptionist', 'manag
 
     console.log(`✅ Returning ${previousOrders.length} previous orders for table ${tableId}`);
 
+    // Enhance orders with synchronized timer data
+    const enhancedOrders = previousOrders.map(order => {
+      const enhancedOrder = { ...order.toObject() };
+
+      // Add synchronized timer data for items that are cooking
+      if (global.cookingTimers.has(order.orderId)) {
+        const orderTimers = global.cookingTimers.get(order.orderId);
+        enhancedOrder.orderedItems = enhancedOrder.orderedItems.map((item, idx) => {
+          if (orderTimers.has(idx)) {
+            const timerInfo = orderTimers.get(idx);
+            return {
+              ...item,
+              syncedStartTime: timerInfo.startTime,
+              syncedElapsedSeconds: Math.floor((Date.now() - timerInfo.startTime) / 1000)
+            };
+          }
+          return item;
+        });
+      }
+
+      return enhancedOrder;
+    });
+
     res.status(200).json({
       success: true,
       message: 'Previous orders retrieved successfully',
       data: {
         tableId: tableId,
-        orders: previousOrders
+        orders: enhancedOrders,
+        serverTime: Date.now() // For client synchronization
       }
     });
 
@@ -1111,13 +1207,13 @@ router.post('/:orderId/payment', protect, authorize('receptionist', 'manager', '
     order.billing.changeAmount = Math.max(0, order.billing.paidAmount - finalTotal);
     order.billing.isPaid = true;
     order.billing.paidAt = new Date();
-    
+
     // Mark order as completed if not already
     if (order.status === 'active') {
       order.status = 'completed';
       order.completedAt = new Date();
     }
-    
+
     order.updatedAt = new Date();
 
     // Save the document
