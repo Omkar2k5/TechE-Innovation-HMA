@@ -104,9 +104,9 @@ const CountdownTimer = ({ estimatedCompletionTime, orderStatus }) => {
 
   return (
     <span className={`font-mono text-sm font-bold ${isStopped ? 'text-green-600' :
-        isOvertime ? 'text-red-600' :
-          remaining < 60 ? 'text-orange-600' :
-            'text-blue-600'
+      isOvertime ? 'text-red-600' :
+        remaining < 60 ? 'text-orange-600' :
+          'text-blue-600'
       }`}>
       {!isStopped && isOvertime && '+'}
       {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
@@ -115,8 +115,78 @@ const CountdownTimer = ({ estimatedCompletionTime, orderStatus }) => {
   )
 }
 
+// Cooking Timer Component (shows elapsed time since cooking started - synchronized with backend)
+const CookingTimer = ({ item, orderStartTime, orderId, itemIndex }) => {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [isActive, setIsActive] = useState(false)
+
+  useEffect(() => {
+    // Only show timer if cooking has started and item is not ready
+    const shouldShowTimer = item.status === 'PREPARING' && item.status !== 'READY' && item.status !== 'SERVED'
+    setIsActive(shouldShowTimer)
+
+    if (!shouldShowTimer) {
+      setElapsedSeconds(0)
+      return
+    }
+
+    // Fetch synchronized timer data from backend
+    const fetchTimerData = async () => {
+      try {
+        const response = await api.get('/orders/timers')
+        if (response && response.success && response.data.timers[orderId] && response.data.timers[orderId][itemIndex]) {
+          const timerInfo = response.data.timers[orderId][itemIndex]
+          // Use server-calculated elapsed seconds directly (no client-side calculation)
+          setElapsedSeconds(timerInfo.elapsedSeconds)
+        }
+      } catch (error) {
+        console.error('Error fetching timer data:', error)
+      }
+    }
+
+    // Fetch initial timer data
+    fetchTimerData()
+
+    // Update timer every second
+    const interval = setInterval(() => {
+      fetchTimerData()
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [item.status, orderId, itemIndex])
+
+  if (!isActive) {
+    if (item.status === 'READY') {
+      return (
+        <div className="mt-2 flex items-center gap-2 px-2 py-1 bg-green-100 rounded text-xs">
+          <span className="text-green-800 font-semibold">✓ Ready</span>
+        </div>
+      )
+    }
+    if (item.status === 'PENDING') {
+      return (
+        <div className="mt-2 flex items-center gap-2 px-2 py-1 bg-amber-100 rounded text-xs">
+          <span className="text-amber-800 font-semibold">⏳ Waiting to start</span>
+        </div>
+      )
+    }
+    return null
+  }
+
+  const minutes = Math.floor(elapsedSeconds / 60)
+  const seconds = elapsedSeconds % 60
+  const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+
+  return (
+    <div className="mt-2 flex items-center gap-2 px-2 py-1 bg-blue-100 rounded text-xs">
+      <span className="text-blue-800 font-semibold">⏱️ Cooking Time:</span>
+      <span className="text-blue-800 font-mono font-bold">{formatted}</span>
+    </div>
+  )
+}
+
 // Item Card Component
-const ItemCard = ({ item, onStatusChange, onShortage }) => {
+const ItemCard = ({ item, orderStartTime, onStatusChange, onShortage, orderId, itemIndex }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'PENDING': return 'bg-amber-100 text-amber-800 border-amber-300'
@@ -147,6 +217,13 @@ const ItemCard = ({ item, onStatusChange, onShortage }) => {
               📝 {item.specialInstructions}
             </div>
           )}
+          {/* Synchronized timer display */}
+          <CookingTimer
+            item={item}
+            orderStartTime={orderStartTime}
+            orderId={orderId}
+            itemIndex={itemIndex}
+          />
         </div>
         <span className={`px-3 py-1 rounded-md border-2 text-xs font-semibold ${getStatusColor(item.status)}`}>
           {item.status}
@@ -158,8 +235,8 @@ const ItemCard = ({ item, onStatusChange, onShortage }) => {
           onClick={() => onStatusChange('PREPARING')}
           disabled={item.status === 'READY'}
           className={`flex-1 px-3 py-2 rounded-md text-sm font-medium border transition-colors ${item.status === 'PREPARING'
-              ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed'
+            ? 'bg-blue-600 text-white border-blue-600'
+            : 'bg-white text-blue-700 border-blue-300 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed'
             }`}
         >
           {item.status === 'PREPARING' ? '🔥 Cooking' : 'Start Cooking'}
@@ -168,8 +245,8 @@ const ItemCard = ({ item, onStatusChange, onShortage }) => {
           onClick={() => onStatusChange('READY')}
           disabled={item.status === 'PENDING'}
           className={`flex-1 px-3 py-2 rounded-md text-sm font-medium border transition-colors ${item.status === 'READY'
-              ? 'bg-green-600 text-white border-green-600'
-              : 'bg-white text-green-700 border-green-300 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed'
+            ? 'bg-green-600 text-white border-green-600'
+            : 'bg-white text-green-700 border-green-300 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed'
             }`}
         >
           ✓ Ready
@@ -477,8 +554,8 @@ export default function CookDashboard() {
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={`px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all duration-300 ${filter === f.key
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 border-transparent text-white shadow-lg scale-105'
-                  : 'bg-white/80 backdrop-blur-sm border-purple-200 text-gray-700 hover:border-purple-400 hover:shadow-md'
+                ? 'bg-gradient-to-r from-purple-600 to-blue-600 border-transparent text-white shadow-lg scale-105'
+                : 'bg-white/80 backdrop-blur-sm border-purple-200 text-gray-700 hover:border-purple-400 hover:shadow-md'
                 }`}
             >
               {f.label} ({f.count})
@@ -492,8 +569,8 @@ export default function CookDashboard() {
             <div key={order.orderId} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
               {/* Order Header */}
               <div className={`p-4 border-b ${order.priority === 'URGENT' ? 'bg-gradient-to-r from-red-100/80 to-pink-100/80 border-red-200' :
-                  order.priority === 'HIGH' ? 'bg-gradient-to-r from-orange-100/80 to-amber-100/80 border-orange-200' :
-                    'bg-gradient-to-r from-purple-50/80 to-blue-50/80 border-gray-200'
+                order.priority === 'HIGH' ? 'bg-gradient-to-r from-orange-100/80 to-amber-100/80 border-orange-200' :
+                  'bg-gradient-to-r from-purple-50/80 to-blue-50/80 border-gray-200'
                 }`}>
                 <div className="flex items-start justify-between">
                   <div>
@@ -536,8 +613,8 @@ export default function CookDashboard() {
                     </span>
                     {order.priority !== 'NORMAL' && (
                       <span className={`text-xs px-2 py-0.5 rounded font-bold ${order.priority === 'URGENT' ? 'bg-red-200 text-red-800' :
-                          order.priority === 'HIGH' ? 'bg-orange-200 text-orange-800' :
-                            'bg-blue-200 text-blue-800'
+                        order.priority === 'HIGH' ? 'bg-orange-200 text-orange-800' :
+                          'bg-blue-200 text-blue-800'
                         }`}>
                         {order.priority}
                       </span>
@@ -564,8 +641,11 @@ export default function CookDashboard() {
                   <ItemCard
                     key={idx}
                     item={item}
+                    orderStartTime={order.orderTime?.startedPreparationAt}
                     onStatusChange={(status) => handleItemStatusChange(order.orderId, idx, status)}
                     onShortage={() => setShortageModal({ isOpen: true, orderInfo: order, item })}
+                    orderId={order.orderId}
+                    itemIndex={idx}
                   />
                 ))}
               </div>
